@@ -5,6 +5,56 @@ date: "2023-11-28"
 output: html_document
 ---
 
+```{r message=FALSE, warning=FALSE}
+library(tidyverse)
+library(readr)
+```
+
+```{r message=FALSE, warning=FALSE}
+data = read_csv("Project_2_data.csv") |> janitor::clean_names() |> drop_na()
+head(data)
+```
+
+```{r}
+colnames(data)
+```
+
+```{r}
+unique(data$race)
+unique(data$marital_status)
+unique(data$t_stage)
+unique(data$n_stage)
+unique(data$x6th_stage)
+unique(data$differentiate)
+unique(data$a_stage)
+```
+Confusion matrix - need to convert all variables into numeric:
+```{r}
+cor_matrix = cor(data[, c("age", "regional_node_examined", "tumor_size")])
+cor_matrix
+```
+Fit an SLR on xxx
+```{r}
+
+```
+
+Fit an MLR on xxx, xxx, xxx, ....
+What variables to choose? Refer to hw4 "should you include xxx?"
+```{r}
+
+```
+
+Fit MLR model:
+```{r}
+
+```
+
+Model performance (auc of roc):
+```{r}
+
+```
+
+Model refine to address the diff across racial groups - weighting?:
 ```{r}
 
 ```
