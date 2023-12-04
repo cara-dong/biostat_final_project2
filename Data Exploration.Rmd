@@ -43,6 +43,7 @@ bc_data = read.csv("./Project_2_data.csv") |>
     estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
     progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
     ) |> 
+  rename(regional_node_positive = reginol_node_positive) |> 
   select(-status)
 ```
 
@@ -65,6 +66,8 @@ mult.fit =
   lm(survival_months ~ ., data = bc_data)
 
 summary(mult.fit)
+
+step(mult.fit, direction='backward')
 ```
 
 
