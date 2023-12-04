@@ -12,7 +12,6 @@ library(corrplot)
 library(leaps)
 library(glmnet)
 
-theme_set (theme_minimal() +theme(legend.position = "bottom"))
 
 options(
   ggplot2.continuous.colour = "viridis", 
@@ -62,13 +61,59 @@ corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ```
 
 ```{r}
+# boxplots for each variable
+par(mfrow = c(2,3))
+
+boxplot(bc_data$survival_months, main = "survival_months")
+boxplot(bc_data$age, main = "age")
+boxplot(bc_data$race, main = "race")
+boxplot(bc_data$marital_status, main = "marital_status")
+boxplot(bc_data$t_stage, main = "t_stage")
+boxplot(bc_data$n_stage, main = "n_stage")
+
+par(mfrow = c(2,4))
+boxplot(bc_data$x6th_stage, main = "x6th_stage")
+boxplot(bc_data$differentiate, main = "differentiate")
+boxplot(bc_data$a_stage, main = "a_stage")
+boxplot(bc_data$tumor_size, main = "tumor_size")
+boxplot(bc_data$estrogen_status, main = "estrogen_status")
+boxplot(bc_data$progesterone_status, main = "progesterone_status")
+boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
+boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
+```
+
+
+```{r}
+# backward regression
 mult.fit = 
   lm(survival_months ~ ., data = bc_data)
 
 summary(mult.fit)
 
-step(mult.fit, direction='backward')
+step_backward = step(mult.fit, direction='backward')
 ```
+
+```{r}
+# Criteria based procedures. both direction: choose the model with the smallest AIC value
+step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_both, digits = 3)
+
+# make plots for all variables
+# plot(step_both, which = 2)
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{r eval=FALSE}

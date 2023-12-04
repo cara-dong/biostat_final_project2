@@ -45,6 +45,35 @@ corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
 
 ``` r
+# boxplots for each variable
+par(mfrow = c(2,3))
+
+boxplot(bc_data$survival_months, main = "survival_months")
+boxplot(bc_data$age, main = "age")
+boxplot(bc_data$race, main = "race")
+boxplot(bc_data$marital_status, main = "marital_status")
+boxplot(bc_data$t_stage, main = "t_stage")
+boxplot(bc_data$n_stage, main = "n_stage")
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+
+``` r
+par(mfrow = c(2,4))
+boxplot(bc_data$x6th_stage, main = "x6th_stage")
+boxplot(bc_data$differentiate, main = "differentiate")
+boxplot(bc_data$a_stage, main = "a_stage")
+boxplot(bc_data$tumor_size, main = "tumor_size")
+boxplot(bc_data$estrogen_status, main = "estrogen_status")
+boxplot(bc_data$progesterone_status, main = "progesterone_status")
+boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
+boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-4-2.png)<!-- -->
+
+``` r
+# backward regression
 mult.fit = 
   lm(survival_months ~ ., data = bc_data)
 
@@ -98,7 +127,7 @@ summary(mult.fit)
     ## F-statistic: 7.808 on 24 and 3999 DF,  p-value: < 2.2e-16
 
 ``` r
-step(mult.fit, direction='backward')
+step_backward = step(mult.fit, direction='backward')
 ```
 
     ## Start:  AIC=25071.64
@@ -232,19 +261,30 @@ step(mult.fit, direction='backward')
     ## - estrogen_status         1   14365.3 2042012 25083
     ## - regional_node_positive  1   23221.7 2050868 25101
 
-    ## 
-    ## Call:
-    ## lm(formula = survival_months ~ race + a_stage + tumor_size + 
-    ##     estrogen_status + progesterone_status + regional_node_examined + 
-    ##     regional_node_positive, data = bc_data)
-    ## 
-    ## Coefficients:
-    ##            (Intercept)                   race2                   race3  
-    ##               55.10083                 4.15606                 6.11558  
-    ##               a_stage2              tumor_size        estrogen_status1  
-    ##                4.73676                -0.05437                 8.85073  
-    ##   progesterone_status1  regional_node_examined  regional_node_positive  
-    ##                1.93725                 0.11188                -0.54169
+``` r
+# Criteria based procedures. both direction: choose the model with the smallest AIC value
+step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_both, digits = 3)
+```
+
+| term                   | estimate | std.error | statistic | p.value |
+|:-----------------------|---------:|----------:|----------:|--------:|
+| (Intercept)            |   55.101 |     3.147 |    17.510 |   0.000 |
+| race2                  |    4.156 |     1.375 |     3.024 |   0.003 |
+| race3                  |    6.116 |     1.821 |     3.358 |   0.001 |
+| a_stage2               |    4.737 |     2.448 |     1.935 |   0.053 |
+| tumor_size             |   -0.054 |     0.017 |    -3.132 |   0.002 |
+| estrogen_status1       |    8.851 |     1.659 |     5.333 |   0.000 |
+| progesterone_status1   |    1.937 |     1.092 |     1.773 |   0.076 |
+| regional_node_examined |    0.112 |     0.048 |     2.329 |   0.020 |
+| regional_node_positive |   -0.542 |     0.080 |    -6.781 |   0.000 |
+
+``` r
+# make plots for all variables
+# plot(step_both, which = 2)
+```
 
 ``` r
 # include a descriptive table with summary statistics for all variables
@@ -285,7 +325,7 @@ print(combined_summary)
 hist(bc_data$survival_months, main = "Distribution of survival months", xlab = "Survival Month")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 #try different transformation 
@@ -293,21 +333,21 @@ log_survival = log(bc_data$survival_months)
 hist(log_survival, main = "Distribution of log_transformed survival months", xlab = "log-transformed survival months")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
 
 ``` r
 sqrt_survival = sqrt(bc_data$survival_months)
 hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
 
 ``` r
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-4.png)<!-- -->
 
 ``` r
 bc_data = bc_data |>
@@ -321,7 +361,7 @@ bc_data |>
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-5.png)<!-- -->
 
 ``` r
 # examine the marginal distributions and pariwise relationships between variables (e.g., to check to see whether any nonlinearities are immediately obvious)
