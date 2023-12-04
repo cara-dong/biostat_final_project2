@@ -11,22 +11,22 @@ bc_data = read.csv("./Project_2_data.csv") |>
   janitor::clean_names() |> 
   na.omit() |> 
   mutate(
-    race = factor(race, levels = 1:3, labels = c("Black","White","Other")),
-    marital_status = factor(marital_status, levels = 1:5,labels = c("Divorced", "Married", "Separated", "Single", "Widowed")),
-    t_stage = factor(t_stage, levels = 1:4,labels = c("T1", "T2", "T3", "T4")),
-    n_stage = factor(n_stage, levels = 1:3,labels = c("N1","N2", "N3")),
-    x6th_stage = factor(x6th_stage, levels = 1:5,labels = c("IIA","IIB","IIIA","IIIB","IIIC")),
-    differentiate = factor(differentiate, levels = 1:4,labels = c("Moderately differentiated","Poorly differentiated","Undifferentiated","Well differentiated")),
-    grade = factor(grade, levels = 1:4,labels = c("1","2","3"," anaplastic; Grade IV")),
-    a_stage = factor(a_stage, levels = 1:2,labels = c("Distant","Regional")),
-    estrogen_status = factor(estrogen_status, levels = 0:1,labels = c("Negative","Positive")),
-    progesterone_status = factor(progesterone_status, levels = 0:1,labels = c("Negative","Positive"))
+    race = factor(race, labels = c("1", "2", "3"), levels = c("Black","White","Other")),
+    marital_status = factor(marital_status, labels = c("1", "2", "3","4","5"),levels = c("Divorced", "Married", "Separated", "Single ", "Widowed")),
+    t_stage = factor(t_stage, labels = c("1", "2", "3","4"),levels = c("T1", "T2", "T3", "T4")),
+    n_stage = factor(n_stage, labels = c("1","2","3"),levels = c("N1","N2", "N3")),
+    x6th_stage = factor(x6th_stage, labels = c("1", "2", "3","4","5"),levels = c("IIA","IIB","IIIA","IIIB","IIIC")),
+    differentiate = factor(differentiate, labels = c("1", "2", "3","4"),levels = c("Moderately differentiated","Poorly differentiated","Undifferentiated","Well differentiated")),
+    grade = factor(grade, labels = c("1", "2", "3","4"),levels = c("1","2","3"," anaplastic; Grade IV")),
+    a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
+    estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
+    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
     )
 ```
 
 ``` r
 # Pairwise interaction and Correlation plot
-  
+
 bc_data |> 
   select(-status) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
@@ -92,44 +92,44 @@ print(combined_summary)
 
     ## 
     ## 
-    ## |Variable            |Value                                   | Count|
-    ## |:-------------------|:---------------------------------------|-----:|
-    ## |race                |race_Black                              |     0|
-    ## |race                |race_White                              |     0|
-    ## |race                |race_Other                              |     0|
-    ## |marital_status      |marital_status_Divorced                 |     0|
-    ## |marital_status      |marital_status_Married                  |     0|
-    ## |marital_status      |marital_status_Separated                |     0|
-    ## |marital_status      |marital_status_Single                   |     0|
-    ## |marital_status      |marital_status_Widowed                  |     0|
-    ## |t_stage             |t_stage_T1                              |     0|
-    ## |t_stage             |t_stage_T2                              |     0|
-    ## |t_stage             |t_stage_T3                              |     0|
-    ## |t_stage             |t_stage_T4                              |     0|
-    ## |n_stage             |n_stage_N1                              |     0|
-    ## |n_stage             |n_stage_N2                              |     0|
-    ## |n_stage             |n_stage_N3                              |     0|
-    ## |x6th_stage          |x6th_stage_IIA                          |     0|
-    ## |x6th_stage          |x6th_stage_IIB                          |     0|
-    ## |x6th_stage          |x6th_stage_IIIA                         |     0|
-    ## |x6th_stage          |x6th_stage_IIIB                         |     0|
-    ## |x6th_stage          |x6th_stage_IIIC                         |     0|
-    ## |differentiate       |differentiate_Moderately differentiated |     0|
-    ## |differentiate       |differentiate_Poorly differentiated     |     0|
-    ## |differentiate       |differentiate_Undifferentiated          |     0|
-    ## |differentiate       |differentiate_Well differentiated       |     0|
-    ## |grade               |grade_1                                 |   543|
-    ## |grade               |grade_2                                 |  2351|
-    ## |grade               |grade_3                                 |  1111|
-    ## |grade               |grade_ anaplastic; Grade IV             |     0|
-    ## |a_stage             |a_stage_Distant                         |     0|
-    ## |a_stage             |a_stage_Regional                        |     0|
-    ## |estrogen_status     |estrogen_status_Negative                |     0|
-    ## |estrogen_status     |estrogen_status_Positive                |     0|
-    ## |progesterone_status |progesterone_status_Negative            |     0|
-    ## |progesterone_status |progesterone_status_Positive            |     0|
-    ## |status              |status_Alive                            |  3408|
-    ## |status              |status_Dead                             |   616|
+    ## |Variable            |Value                 | Count|
+    ## |:-------------------|:---------------------|-----:|
+    ## |race                |race_1                |   291|
+    ## |race                |race_2                |  3413|
+    ## |race                |race_3                |   320|
+    ## |marital_status      |marital_status_1      |   486|
+    ## |marital_status      |marital_status_2      |  2643|
+    ## |marital_status      |marital_status_3      |    45|
+    ## |marital_status      |marital_status_4      |   615|
+    ## |marital_status      |marital_status_5      |   235|
+    ## |t_stage             |t_stage_1             |  1603|
+    ## |t_stage             |t_stage_2             |  1786|
+    ## |t_stage             |t_stage_3             |   533|
+    ## |t_stage             |t_stage_4             |   102|
+    ## |n_stage             |n_stage_1             |  2732|
+    ## |n_stage             |n_stage_2             |   820|
+    ## |n_stage             |n_stage_3             |   472|
+    ## |x6th_stage          |x6th_stage_1          |  1305|
+    ## |x6th_stage          |x6th_stage_2          |  1130|
+    ## |x6th_stage          |x6th_stage_3          |  1050|
+    ## |x6th_stage          |x6th_stage_4          |    67|
+    ## |x6th_stage          |x6th_stage_5          |   472|
+    ## |differentiate       |differentiate_1       |  2351|
+    ## |differentiate       |differentiate_2       |  1111|
+    ## |differentiate       |differentiate_3       |    19|
+    ## |differentiate       |differentiate_4       |   543|
+    ## |grade               |grade_1               |   543|
+    ## |grade               |grade_2               |  2351|
+    ## |grade               |grade_3               |  1111|
+    ## |grade               |grade_4               |    19|
+    ## |a_stage             |a_stage_1             |    92|
+    ## |a_stage             |a_stage_2             |  3932|
+    ## |estrogen_status     |estrogen_status_0     |   269|
+    ## |estrogen_status     |estrogen_status_1     |  3755|
+    ## |progesterone_status |progesterone_status_0 |   698|
+    ## |progesterone_status |progesterone_status_1 |  3326|
+    ## |status              |status_Alive          |  3408|
+    ## |status              |status_Dead           |   616|
 
 ``` r
 # explore the distribution of the outcome and consider potential transformations if necessary
