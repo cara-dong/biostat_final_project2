@@ -21,24 +21,20 @@ bc_data = read.csv("./Project_2_data.csv") |>
     a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
     estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
     progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
-    )
+    ) |> 
+  select(-status)
 ```
 
 ``` r
 # Pairwise interaction and Correlation plot
-
 bc_data |> 
-  select(-status) |> 
-  mutate(across(where(is.factor), as.numeric)) |> 
-  cor() |> 
-  (\(x) corrplot(x, type = "upper", diag = FALSE))()
+  pairs()
 ```
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 ``` r
 cor_matrix <- bc_data |> 
-  select(-status) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
   cor()
 
@@ -46,6 +42,59 @@ corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ```
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-3-2.png)<!-- -->
+
+``` r
+mult.fit = 
+  lm(survival_months ~ ., data = bc_data)
+
+summary(mult.fit)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ ., data = bc_data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -74.685 -15.591   1.087  18.126  56.245 
+    ## 
+    ## Coefficients: (4 not defined because of singularities)
+    ##                        Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)            58.98164    4.18486  14.094  < 2e-16 ***
+    ## age                    -0.04220    0.04138  -1.020  0.30787    
+    ## race2                   3.67154    1.40193   2.619  0.00885 ** 
+    ## race3                   5.58194    1.84998   3.017  0.00257 ** 
+    ## marital_status2         0.71309    1.11566   0.639  0.52276    
+    ## marital_status3        -6.24605    3.52093  -1.774  0.07614 .  
+    ## marital_status4        -0.03560    1.37859  -0.026  0.97940    
+    ## marital_status5        -0.78933    1.80857  -0.436  0.66254    
+    ## t_stage2               -1.61447    1.69125  -0.955  0.33984    
+    ## t_stage3                0.73762    2.76338   0.267  0.78954    
+    ## t_stage4               -2.25092    4.48353  -0.502  0.61567    
+    ## n_stage2               -0.58607    1.98650  -0.295  0.76799    
+    ## n_stage3               -3.37649    2.67197  -1.264  0.20642    
+    ## x6th_stage2             0.53765    1.82506   0.295  0.76832    
+    ## x6th_stage3            -0.65701    2.36107  -0.278  0.78082    
+    ## x6th_stage4             3.32794    5.15941   0.645  0.51895    
+    ## x6th_stage5                  NA         NA      NA       NA    
+    ## differentiate2         -0.98945    0.85155  -1.162  0.24533    
+    ## differentiate3         -2.95238    5.21782  -0.566  0.57154    
+    ## differentiate4         -0.02110    1.07890  -0.020  0.98440    
+    ## grade2                       NA         NA      NA       NA    
+    ## grade3                       NA         NA      NA       NA    
+    ## grade4                       NA         NA      NA       NA    
+    ## a_stage2                4.36505    2.67211   1.634  0.10243    
+    ## tumor_size             -0.05649    0.03434  -1.645  0.10002    
+    ## estrogen_status1        8.61299    1.68605   5.108  3.4e-07 ***
+    ## progesterone_status1    1.60271    1.10116   1.455  0.14562    
+    ## regional_node_examined  0.10692    0.04828   2.214  0.02686 *  
+    ## reginol_node_positive  -0.31396    0.14259  -2.202  0.02774 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 22.47 on 3999 degrees of freedom
+    ## Multiple R-squared:  0.04476,    Adjusted R-squared:  0.03903 
+    ## F-statistic: 7.808 on 24 and 3999 DF,  p-value: < 2.2e-16
 
 ``` r
 # include a descriptive table with summary statistics for all variables
@@ -56,18 +105,7 @@ bc_data |>
   select(all_of(conti_var)) |>
   summary() |>
   knitr::kable()
-```
 
-|     | age           | tumor_size     | regional_node_examined | reginol_node_positive | survival_months |
-|:----|:--------------|:---------------|:-----------------------|:----------------------|:----------------|
-|     | Min. :30.00   | Min. : 1.00    | Min. : 1.00            | Min. : 1.000          | Min. : 1.0      |
-|     | 1st Qu.:47.00 | 1st Qu.: 16.00 | 1st Qu.: 9.00          | 1st Qu.: 1.000        | 1st Qu.: 56.0   |
-|     | Median :54.00 | Median : 25.00 | Median :14.00          | Median : 2.000        | Median : 73.0   |
-|     | Mean :53.97   | Mean : 30.47   | Mean :14.36            | Mean : 4.158          | Mean : 71.3     |
-|     | 3rd Qu.:61.00 | 3rd Qu.: 38.00 | 3rd Qu.:19.00          | 3rd Qu.: 5.000        | 3rd Qu.: 90.0   |
-|     | Max. :69.00   | Max. :140.00   | Max. :61.00            | Max. :46.000          | Max. :107.0     |
-
-``` r
 # discrete data count number of distinct variables
 
 
@@ -90,47 +128,6 @@ combined_summary = do.call(rbind, summary_tables) |>
 print(combined_summary)
 ```
 
-    ## 
-    ## 
-    ## |Variable            |Value                 | Count|
-    ## |:-------------------|:---------------------|-----:|
-    ## |race                |race_1                |   291|
-    ## |race                |race_2                |  3413|
-    ## |race                |race_3                |   320|
-    ## |marital_status      |marital_status_1      |   486|
-    ## |marital_status      |marital_status_2      |  2643|
-    ## |marital_status      |marital_status_3      |    45|
-    ## |marital_status      |marital_status_4      |   615|
-    ## |marital_status      |marital_status_5      |   235|
-    ## |t_stage             |t_stage_1             |  1603|
-    ## |t_stage             |t_stage_2             |  1786|
-    ## |t_stage             |t_stage_3             |   533|
-    ## |t_stage             |t_stage_4             |   102|
-    ## |n_stage             |n_stage_1             |  2732|
-    ## |n_stage             |n_stage_2             |   820|
-    ## |n_stage             |n_stage_3             |   472|
-    ## |x6th_stage          |x6th_stage_1          |  1305|
-    ## |x6th_stage          |x6th_stage_2          |  1130|
-    ## |x6th_stage          |x6th_stage_3          |  1050|
-    ## |x6th_stage          |x6th_stage_4          |    67|
-    ## |x6th_stage          |x6th_stage_5          |   472|
-    ## |differentiate       |differentiate_1       |  2351|
-    ## |differentiate       |differentiate_2       |  1111|
-    ## |differentiate       |differentiate_3       |    19|
-    ## |differentiate       |differentiate_4       |   543|
-    ## |grade               |grade_1               |   543|
-    ## |grade               |grade_2               |  2351|
-    ## |grade               |grade_3               |  1111|
-    ## |grade               |grade_4               |    19|
-    ## |a_stage             |a_stage_1             |    92|
-    ## |a_stage             |a_stage_2             |  3932|
-    ## |estrogen_status     |estrogen_status_0     |   269|
-    ## |estrogen_status     |estrogen_status_1     |  3755|
-    ## |progesterone_status |progesterone_status_0 |   698|
-    ## |progesterone_status |progesterone_status_1 |  3326|
-    ## |status              |status_Alive          |  3408|
-    ## |status              |status_Dead           |   616|
-
 ``` r
 # explore the distribution of the outcome and consider potential transformations if necessary
 # Since the purpose is to predict the risk of death based on features 1-14, we are going to fit a model with variables 1-14 as predictors (x) and the survival months as the y value. 
@@ -138,7 +135,7 @@ print(combined_summary)
 hist(bc_data$survival_months, main = "Distribution of survival months", xlab = "Survival Month")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 #try different transformation 
@@ -146,21 +143,21 @@ log_survival = log(bc_data$survival_months)
 hist(log_survival, main = "Distribution of log_transformed survival months", xlab = "log-transformed survival months")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
 ``` r
 sqrt_survival = sqrt(bc_data$survival_months)
 hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
 ``` r
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
 
 ``` r
 bc_data = bc_data |>
@@ -174,7 +171,7 @@ bc_data |>
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
 
 ``` r
 # examine the marginal distributions and pariwise relationships between variables (e.g., to check to see whether any nonlinearities are immediately obvious)
