@@ -135,7 +135,7 @@ bc_data |>
 <img src="Data-Exploration_files/figure-gfm/unnamed-chunk-3-5.png" width="90%" />
 
 ``` r
-# examine the marginal distributions and pariwise relationships between variables 
+# examine the marginal distributions and pariwise relationships between variables (e.g., to check to see whether any nonlinearities are immediately obvious)
 # explore several candidate models, and explain why you select your model
 model_all = lm(survival_months ~ age+reginol_node_positive+ regional_node_examined+factor(estrogen_status)+factor(progesterone_status)+tumor_size+factor(a_stage) +factor(grade)+factor(differentiate)+factor(x6th_stage)+factor(n_stage)+factor(t_stage)+factor(marital_status)+factor(race), data = bc_data)
 
