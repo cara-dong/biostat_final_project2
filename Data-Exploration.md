@@ -6,43 +6,6 @@ Manye Dong
 ## Predict the risk of death based on features 1-14
 
 ``` r
-library(tidyverse)
-```
-
-    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-    ## ✔ dplyr     1.1.3     ✔ readr     2.1.4
-    ## ✔ forcats   1.0.0     ✔ stringr   1.5.0
-    ## ✔ ggplot2   3.4.3     ✔ tibble    3.2.1
-    ## ✔ lubridate 1.9.2     ✔ tidyr     1.3.0
-    ## ✔ purrr     1.0.2     
-    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-    ## ℹ Use the conflicted package (<http://conflicted.r-lib.org/>) to force all conflicts to become errors
-
-``` r
-knitr::opts_chunk$set(
-  fig.width = 6,
-  fig.asp = .6, 
-  out.width = "90%"
-)
-
-theme_set (theme_minimal() +theme(legend.position = "bottom"))
-
-options(
-  ggplot2.continuous.colour = "viridis", 
-  ggplots.continuous.fill = "viridis"
-)
-
-scale_colour_discrete = scale_colour_viridis_d
-scale_fill_disrete = scale_fill_viridis_d
-
-# import data
-bc_data = read.csv("./Project_2_data.csv") |>
-  janitor::clean_names()
-```
-
-``` r
 # include a descriptive table with summary statistics for all variables
 
 # continuous data
@@ -151,12 +114,123 @@ hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt
 <img src="Data-Exploration_files/figure-gfm/unnamed-chunk-3-3.png" width="90%" />
 
 ``` r
-cubic_survival = sign(bc_data$survival_months)*abs(bc_data$survival_months)^(1/3)
-hist(cubic_survival, main = "Distribution of cubic root(survival months)", xlab = "cubic root(survival months)")
+sq_survival = (bc_data$survival_months^2)
+hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
 ```
 
 <img src="Data-Exploration_files/figure-gfm/unnamed-chunk-3-4.png" width="90%" />
 
 ``` r
+bc_data = bc_data |>
+  mutate(log_survival = log(survival_months))
+
+bc_data |>
+  ggplot(aes(x = log_survival)) +
+  geom_histogram() +
+  labs(title = "Distribution of log(survival months)", x = "log(survival months)")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+<img src="Data-Exploration_files/figure-gfm/unnamed-chunk-3-5.png" width="90%" />
+
+``` r
+# examine the marginal distributions and pariwise relationships between variables 
+# explore several candidate models, and explain why you select your model
+model_all = lm(survival_months ~ age+reginol_node_positive+ regional_node_examined+factor(estrogen_status)+factor(progesterone_status)+tumor_size+factor(a_stage) +factor(grade)+factor(differentiate)+factor(x6th_stage)+factor(n_stage)+factor(t_stage)+factor(marital_status)+factor(race), data = bc_data)
+
+summary(model_all)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ age + reginol_node_positive + 
+    ##     regional_node_examined + factor(estrogen_status) + factor(progesterone_status) + 
+    ##     tumor_size + factor(a_stage) + factor(grade) + factor(differentiate) + 
+    ##     factor(x6th_stage) + factor(n_stage) + factor(t_stage) + 
+    ##     factor(marital_status) + factor(race), data = bc_data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -74.685 -15.591   1.087  18.126  56.245 
+    ## 
+    ## Coefficients: (4 not defined because of singularities)
+    ##                                            Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                                56.02926    6.63672   8.442  < 2e-16
+    ## age                                        -0.04220    0.04138  -1.020  0.30787
+    ## reginol_node_positive                      -0.31396    0.14259  -2.202  0.02774
+    ## regional_node_examined                      0.10692    0.04828   2.214  0.02686
+    ## factor(estrogen_status)Positive             8.61299    1.68605   5.108  3.4e-07
+    ## factor(progesterone_status)Positive         1.60271    1.10116   1.455  0.14562
+    ## tumor_size                                 -0.05649    0.03434  -1.645  0.10002
+    ## factor(a_stage)Regional                     4.36505    2.67211   1.634  0.10243
+    ## factor(grade)1                              2.93128    5.29131   0.554  0.57962
+    ## factor(grade)2                              2.95238    5.21782   0.566  0.57154
+    ## factor(grade)3                              1.96293    5.22945   0.375  0.70741
+    ## factor(differentiate)Poorly differentiated       NA         NA      NA       NA
+    ## factor(differentiate)Undifferentiated            NA         NA      NA       NA
+    ## factor(differentiate)Well differentiated         NA         NA      NA       NA
+    ## factor(x6th_stage)IIB                       0.53765    1.82506   0.295  0.76832
+    ## factor(x6th_stage)IIIA                     -0.65701    2.36107  -0.278  0.78082
+    ## factor(x6th_stage)IIIB                      3.32794    5.15941   0.645  0.51895
+    ## factor(x6th_stage)IIIC                     -3.37649    2.67197  -1.264  0.20642
+    ## factor(n_stage)N2                          -0.58607    1.98650  -0.295  0.76799
+    ## factor(n_stage)N3                                NA         NA      NA       NA
+    ## factor(t_stage)T2                          -1.61447    1.69125  -0.955  0.33984
+    ## factor(t_stage)T3                           0.73762    2.76338   0.267  0.78954
+    ## factor(t_stage)T4                          -2.25092    4.48353  -0.502  0.61567
+    ## factor(marital_status)Married               0.71309    1.11566   0.639  0.52276
+    ## factor(marital_status)Separated            -6.24605    3.52093  -1.774  0.07614
+    ## factor(marital_status)Single               -0.03560    1.37859  -0.026  0.97940
+    ## factor(marital_status)Widowed              -0.78933    1.80857  -0.436  0.66254
+    ## factor(race)Other                           5.58194    1.84998   3.017  0.00257
+    ## factor(race)White                           3.67154    1.40193   2.619  0.00885
+    ##                                               
+    ## (Intercept)                                ***
+    ## age                                           
+    ## reginol_node_positive                      *  
+    ## regional_node_examined                     *  
+    ## factor(estrogen_status)Positive            ***
+    ## factor(progesterone_status)Positive           
+    ## tumor_size                                    
+    ## factor(a_stage)Regional                       
+    ## factor(grade)1                                
+    ## factor(grade)2                                
+    ## factor(grade)3                                
+    ## factor(differentiate)Poorly differentiated    
+    ## factor(differentiate)Undifferentiated         
+    ## factor(differentiate)Well differentiated      
+    ## factor(x6th_stage)IIB                         
+    ## factor(x6th_stage)IIIA                        
+    ## factor(x6th_stage)IIIB                        
+    ## factor(x6th_stage)IIIC                        
+    ## factor(n_stage)N2                             
+    ## factor(n_stage)N3                             
+    ## factor(t_stage)T2                             
+    ## factor(t_stage)T3                             
+    ## factor(t_stage)T4                             
+    ## factor(marital_status)Married                 
+    ## factor(marital_status)Separated            .  
+    ## factor(marital_status)Single                  
+    ## factor(marital_status)Widowed                 
+    ## factor(race)Other                          ** 
+    ## factor(race)White                          ** 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 22.47 on 3999 degrees of freedom
+    ## Multiple R-squared:  0.04476,    Adjusted R-squared:  0.03903 
+    ## F-statistic: 7.808 on 24 and 3999 DF,  p-value: < 2.2e-16
+
+``` r
 # see if there are any unusual observations and consider them as potential outliers/influential points
+
+# detect non normality of outliers, using qq plot
+plot(model_all, which = 2)
+```
+
+<img src="Data-Exploration_files/figure-gfm/unnamed-chunk-5-1.png" width="90%" />
+
+``` r
+# suggest possible models
 ```

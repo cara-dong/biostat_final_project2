@@ -6,7 +6,7 @@ output: github_document
 ---
 
 ## Predict the risk of death based on features 1-14
-```{r}
+```{r message = FALSE, echo= FALSE}
 library(tidyverse)
 
 knitr::opts_chunk$set(
@@ -75,11 +75,35 @@ hist(log_survival, main = "Distribution of log_transformed survival months", xla
 sqrt_survival = sqrt(bc_data$survival_months)
 hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt(survival months)")
 
-cubic_survival = sign(bc_data$survival_months)*abs(bc_data$survival_months)^(1/3)
-hist(cubic_survival, main = "Distribution of cubic root(survival months)", xlab = "cubic root(survival months)")
+sq_survival = (bc_data$survival_months^2)
+hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
+
+bc_data = bc_data |>
+  mutate(log_survival = log(survival_months))
+
+bc_data |>
+  ggplot(aes(x = log_survival)) +
+  geom_histogram() +
+  labs(title = "Distribution of log(survival months)", x = "log(survival months)")
+
+```
+
+```{r}
+# examine the marginal distributions and pariwise relationships between variables 
+# explore several candidate models, and explain why you select your model
+model_all = lm(survival_months ~ age+reginol_node_positive+ regional_node_examined+factor(estrogen_status)+factor(progesterone_status)+tumor_size+factor(a_stage) +factor(grade)+factor(differentiate)+factor(x6th_stage)+factor(n_stage)+factor(t_stage)+factor(marital_status)+factor(race), data = bc_data)
+
+summary(model_all)
 ```
 
 ```{r}
 # see if there are any unusual observations and consider them as potential outliers/influential points
+
+# detect non normality of outliers, using qq plot
+plot(model_all, which = 2)
+```
+
+```{r}
+# suggest possible models
 ```
 
