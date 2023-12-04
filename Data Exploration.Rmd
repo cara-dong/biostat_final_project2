@@ -90,6 +90,9 @@ mult.fit =
 
 summary(mult.fit)
 
+# QQ plot showing datafit 
+plot(mult.fit, which = 2)
+
 step_backward = step(mult.fit, direction='backward')
 ```
 
@@ -100,10 +103,21 @@ step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
 
 knitr::kable(step_both, digits = 3)
 
-# make plots for all variables
-# plot(step_both, which = 2)
 ```
 
+```{r}
+# fit a LASSO with lambda = 1
+# smaller lambda, tends to give large model (more predictors)
+fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
+coef(fit_LASSO)
+
+# cross validation to choose the value of lambda
+# lambda_seq = 10^seq(-3,0, by =0.1)
+# set.seed(123)
+# cv_object = cv.glmnet(as.matrix(bc_data[1:14]), y = bc_data$survival_months, lambda = lambda_seq, nfold = 5)
+# cv_object
+
+```
 
 
 

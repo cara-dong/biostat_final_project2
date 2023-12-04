@@ -127,6 +127,13 @@ summary(mult.fit)
     ## F-statistic: 7.808 on 24 and 3999 DF,  p-value: < 2.2e-16
 
 ``` r
+# QQ plot showing datafit 
+plot(mult.fit, which = 2)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+``` r
 step_backward = step(mult.fit, direction='backward')
 ```
 
@@ -282,8 +289,36 @@ knitr::kable(step_both, digits = 3)
 | regional_node_positive |   -0.542 |     0.080 |    -6.781 |   0.000 |
 
 ``` r
-# make plots for all variables
-# plot(step_both, which = 2)
+# fit a LASSO with lambda = 1
+# smaller lambda, tends to give large model (more predictors)
+fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
+coef(fit_LASSO)
+```
+
+    ## 15 x 1 sparse Matrix of class "dgCMatrix"
+    ##                                s0
+    ## (Intercept)            67.3525076
+    ## age                     .        
+    ## race                    0.5382473
+    ## marital_status          .        
+    ## t_stage                 .        
+    ## n_stage                -0.2010795
+    ## x6th_stage             -1.1722286
+    ## differentiate           .        
+    ## grade                   .        
+    ## a_stage                 .        
+    ## tumor_size              .        
+    ## estrogen_status         6.5647751
+    ## progesterone_status     0.3668584
+    ## regional_node_examined  .        
+    ## regional_node_positive -0.1330287
+
+``` r
+# cross validation to choose the value of lambda
+# lambda_seq = 10^seq(-3,0, by =0.1)
+# set.seed(123)
+# cv_object = cv.glmnet(as.matrix(bc_data[1:14]), y = bc_data$survival_months, lambda = lambda_seq, nfold = 5)
+# cv_object
 ```
 
 ``` r
@@ -325,7 +360,7 @@ print(combined_summary)
 hist(bc_data$survival_months, main = "Distribution of survival months", xlab = "Survival Month")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 #try different transformation 
@@ -333,21 +368,21 @@ log_survival = log(bc_data$survival_months)
 hist(log_survival, main = "Distribution of log_transformed survival months", xlab = "log-transformed survival months")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
 
 ``` r
 sqrt_survival = sqrt(bc_data$survival_months)
 hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-3.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->
 
 ``` r
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->
 
 ``` r
 bc_data = bc_data |>
@@ -361,7 +396,7 @@ bc_data |>
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-5.png)<!-- -->
 
 ``` r
 # examine the marginal distributions and pariwise relationships between variables (e.g., to check to see whether any nonlinearities are immediately obvious)
