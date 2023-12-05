@@ -5,7 +5,7 @@ date: "2023-11-28"
 output: github_document
 ---
 
-## Predict the risk of death based on features 1-14
+## Goal: Predict the risk of death based on features 1-14
 ```{r message = FALSE, echo= FALSE}
 library(tidyverse)
 library(corrplot)
@@ -29,108 +29,11 @@ scale_fill_disrete = scale_fill_viridis_d
 # import data and data cleaning
 bc_data = read.csv("./Project_2_data.csv") |>
   janitor::clean_names() |> 
-  na.omit() |> 
-  mutate(
-    race = factor(race, labels = c("1", "2", "3"), levels = c("Black","White","Other")),
-    marital_status = factor(marital_status, labels = c("1", "2", "3","4","5"),levels = c("Divorced", "Married", "Separated", "Single ", "Widowed")),
-    t_stage = factor(t_stage, labels = c("1", "2", "3","4"),levels = c("T1", "T2", "T3", "T4")),
-    n_stage = factor(n_stage, labels = c("1","2","3"),levels = c("N1","N2", "N3")),
-    x6th_stage = factor(x6th_stage, labels = c("1", "2", "3","4","5"),levels = c("IIA","IIB","IIIA","IIIB","IIIC")),
-    differentiate = factor(differentiate, labels = c("1", "2", "3","4"),levels = c("Moderately differentiated","Poorly differentiated","Undifferentiated","Well differentiated")),
-    grade = factor(grade, labels = c("1", "2", "3","4"),levels = c("1","2","3"," anaplastic; Grade IV")),
-    a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
-    estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
-    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
-    ) |> 
-  rename(regional_node_positive = reginol_node_positive) |> 
-  select(-status)
+  na.omit() 
 ```
 
-
+## Data summary 
 ```{r}
-# Pairwise interaction and Correlation plot
-bc_data |> 
-  pairs()
-
-
-cor_matrix <- bc_data |> 
-  mutate(across(where(is.factor), as.numeric)) |> 
-  cor()
-
-corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
-```
-
-```{r}
-# boxplots for each variable
-par(mfrow = c(2,3))
-
-boxplot(bc_data$survival_months, main = "survival_months")
-boxplot(bc_data$age, main = "age")
-boxplot(bc_data$race, main = "race")
-boxplot(bc_data$marital_status, main = "marital_status")
-boxplot(bc_data$t_stage, main = "t_stage")
-boxplot(bc_data$n_stage, main = "n_stage")
-
-par(mfrow = c(2,4))
-boxplot(bc_data$x6th_stage, main = "x6th_stage")
-boxplot(bc_data$differentiate, main = "differentiate")
-boxplot(bc_data$a_stage, main = "a_stage")
-boxplot(bc_data$tumor_size, main = "tumor_size")
-boxplot(bc_data$estrogen_status, main = "estrogen_status")
-boxplot(bc_data$progesterone_status, main = "progesterone_status")
-boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
-boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
-```
-
-
-```{r}
-# backward regression
-mult.fit = 
-  lm(survival_months ~ ., data = bc_data)
-
-summary(mult.fit)
-
-# QQ plot showing datafit 
-plot(mult.fit, which = 2)
-
-step_backward = step(mult.fit, direction='backward')
-```
-
-```{r}
-# Criteria based procedures. both direction: choose the model with the smallest AIC value
-step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
-  broom::tidy()
-
-knitr::kable(step_both, digits = 3)
-
-```
-
-```{r}
-# fit a LASSO with lambda = 1
-# smaller lambda, tends to give large model (more predictors)
-fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
-coef(fit_LASSO)
-
-# cross validation to choose the value of lambda
-# lambda_seq = 10^seq(-3,0, by =0.1)
-# set.seed(123)
-# cv_object = cv.glmnet(as.matrix(bc_data[1:14]), y = bc_data$survival_months, lambda = lambda_seq, nfold = 5)
-# cv_object
-
-```
-
-
-
-
-
-
-
-
-
-
-
-
-```{r eval=FALSE}
 # include a descriptive table with summary statistics for all variables
 
 # continuous data
@@ -162,9 +65,9 @@ combined_summary = do.call(rbind, summary_tables) |>
 print(combined_summary)
 ```
 
+## Survial Months distribution 
 ```{r}
 # explore the distribution of the outcome and consider potential transformations if necessary
-# Since the purpose is to predict the risk of death based on features 1-14, we are going to fit a model with variables 1-14 as predictors (x) and the survival months as the y value. 
 # look at the original distribution of survival months
 hist(bc_data$survival_months, main = "Distribution of survival months", xlab = "Survival Month")
 
@@ -177,33 +80,118 @@ hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt
 
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
-
-bc_data = bc_data |>
-  mutate(log_survival = log(survival_months))
-
-bc_data |>
-  ggplot(aes(x = log_survival)) +
-  geom_histogram() +
-  labs(title = "Distribution of log(survival months)", x = "log(survival months)")
-
 ```
 
-```{r eval=FALSE}
-# examine the marginal distributions and pariwise relationships between variables (e.g., to check to see whether any nonlinearities are immediately obvious)
-# explore several candidate models, and explain why you select your model
-model_all = lm(survival_months ~ age+reginol_node_positive+ regional_node_examined+factor(estrogen_status)+factor(progesterone_status)+tumor_size+factor(a_stage) +factor(grade)+factor(differentiate)+factor(x6th_stage)+factor(n_stage)+factor(t_stage)+factor(marital_status)+factor(race), data = bc_data)
 
-summary(model_all)
+## Convert categorical data to factor
+```{r}
+bc_data = 
+  bc_data |>
+  mutate(
+    race = factor(race, labels = c("1", "2", "3"), levels = c("Black","White","Other")),
+    marital_status = factor(marital_status, labels = c("1", "2", "3","4","5"),levels = c("Divorced", "Married", "Separated", "Single ", "Widowed")),
+    t_stage = factor(t_stage, labels = c("1", "2", "3","4"),levels = c("T1", "T2", "T3", "T4")),
+    n_stage = factor(n_stage, labels = c("1","2","3"),levels = c("N1","N2", "N3")),
+    x6th_stage = factor(x6th_stage, labels = c("1", "2", "3","4","5"),levels = c("IIA","IIB","IIIA","IIIB","IIIC")),
+    differentiate = factor(differentiate, labels = c("1", "2", "3","4"),levels = c("Moderately differentiated","Poorly differentiated","Undifferentiated","Well differentiated")),
+    grade = factor(grade, labels = c("1", "2", "3","4"),levels = c("1","2","3"," anaplastic; Grade IV")),
+    a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
+    estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
+    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
+    ) |> 
+  rename(regional_node_positive = reginol_node_positive) |> 
+  select(-status)
 ```
 
-```{r eval=FALSE}
-# see if there are any unusual observations and consider them as potential outliers/influential points
 
-# detect non normality of outliers, using qq plot
-plot(model_all, which = 2)
+## Look at data interaction and collinearity
+```{r}
+# Pairwise interaction and Correlation plot
+bc_data |> 
+  pairs()
+
+
+cor_matrix <- bc_data |> 
+  mutate(across(where(is.factor), as.numeric)) |> 
+  cor()
+
+print(cor_matrix, digits = 3)
+
+corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ```
 
 ```{r}
-# suggest possible models
+# boxplots for each variable
+par(mfrow = c(2,3))
+
+boxplot(bc_data$survival_months, main = "survival_months")
+boxplot(bc_data$age, main = "age")
+boxplot(bc_data$race, main = "race")
+boxplot(bc_data$marital_status, main = "marital_status")
+boxplot(bc_data$t_stage, main = "t_stage")
+boxplot(bc_data$n_stage, main = "n_stage")
+
+par(mfrow = c(2,4))
+boxplot(bc_data$x6th_stage, main = "x6th_stage")
+boxplot(bc_data$differentiate, main = "differentiate")
+boxplot(bc_data$a_stage, main = "a_stage")
+boxplot(bc_data$tumor_size, main = "tumor_size")
+boxplot(bc_data$estrogen_status, main = "estrogen_status")
+boxplot(bc_data$progesterone_status, main = "progesterone_status")
+boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
+boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ```
+
+## Model and MLR selections
+```{r}
+mult.fit = 
+  lm(survival_months ~ ., data = bc_data)
+
+summary(mult.fit)
+
+# QQ plot showing datafit 
+plot(mult.fit, which = 2)
+# residual vs. leverage plot
+plot(mult.fit, which = 4)
+```
+
+
+```{r}
+# backward regression 
+step_backward = step(mult.fit, direction='backward')
+
+# Criteria based procedures. both direction: choose the model with the smallest AIC value
+step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_both, digits = 3)
+
+```
+
+```{r}
+# fit a LASSO with lambda = 1
+# smaller lambda, tends to give large model (more predictors)
+fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
+coef(fit_LASSO)
+
+# cross validation to choose the value of lambda
+# lambda_seq = 10^seq(-3,0, by =0.1)
+# set.seed(123)
+# cv_object = cv.glmnet(as.matrix(bc_data[1:14]), y = bc_data$survival_months, lambda = lambda_seq, nfold = 5)
+# cv_object
+
+```
+
+## The model we selected
+
+
+## MLR Validation 
+
+
+
+
+
+
+
+
 
