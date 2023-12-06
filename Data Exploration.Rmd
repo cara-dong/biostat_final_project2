@@ -11,6 +11,7 @@ library(tidyverse)
 library(corrplot)
 library(leaps)
 library(glmnet)
+library(caret)
 
 
 options(
@@ -29,10 +30,10 @@ scale_fill_disrete = scale_fill_viridis_d
 # import data and data cleaning
 bc_data = read.csv("./Project_2_data.csv") |>
   janitor::clean_names() |> 
-  na.omit() 
+  na.omit()
 ```
 
-## Data summary 
+### Data summary 
 ```{r}
 # include a descriptive table with summary statistics for all variables
 
@@ -65,7 +66,22 @@ combined_summary = do.call(rbind, summary_tables) |>
 print(combined_summary)
 ```
 
-## Survial Months distribution 
+### Outliers
+```{r}
+Q1 <- quantile(bc_data$survival_months, 0.25)
+Q3 <- quantile(bc_data$survival_months, 0.75)
+IQR <- Q3 - Q1
+
+lower_bound <- Q1 - 1.5 * IQR
+upper_bound <- Q3 + 1.5 * IQR
+
+outliers <- bc_data |> filter((survival_months < lower_bound) | (survival_months > upper_bound))
+
+bc_data <- anti_join(bc_data, outliers, by = c(colnames(bc_data)))
+```
+
+
+### Survial Months distribution 
 ```{r}
 # explore the distribution of the outcome and consider potential transformations if necessary
 # look at the original distribution of survival months
@@ -85,13 +101,12 @@ iv_survival = (1/bc_data$survival_months)
 hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
 ```
 
-
-## Convert categorical data to factor
+### Convert categorical data to factor
 ```{r}
 bc_data = 
   bc_data |>
   mutate(
-    race = factor(race, labels = c("1", "2", "3"), levels = c("Black","White","Other")),
+    race = factor(race, labels = c("1", "2", "3"), levels = c("Black", "White", "Other")),
     marital_status = factor(marital_status, labels = c("1", "2", "3","4","5"),levels = c("Divorced", "Married", "Separated", "Single ", "Widowed")),
     t_stage = factor(t_stage, labels = c("1", "2", "3","4"),levels = c("T1", "T2", "T3", "T4")),
     n_stage = factor(n_stage, labels = c("1","2","3"),levels = c("N1","N2", "N3")),
@@ -149,6 +164,7 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ```
 
 ## Model and MLR selections
+### MLR with all predictors
 ```{r}
 mult.fit = 
   lm(survival_months ~ ., data = bc_data)
@@ -164,54 +180,268 @@ plot(mult.fit, which = 2)
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
+Looks like doesn't need a transformation on the outcome survival months.
 
+### MLR reducing multicollinearity using correlation matrix
+First, find the highly correlated pairs:
+```{r}
+new_df = bc_data |> mutate(across(where(is.factor), as.numeric))
+```
 
 ```{r}
+cor_matrix = cor(new_df[, c(colnames(new_df))])
+
+# Find the pairs where correlation is greater than or equal to 0.7 but less than 1
+high_cor_pairs = which(cor_matrix >= 0.7 & cor_matrix < 1, arr.ind = TRUE)
+
+# Extract the variable names for these pairs
+high_cor_var_pairs = data.frame(
+  Var1 = rownames(cor_matrix)[high_cor_pairs[, 1]],
+  Var2 = colnames(cor_matrix)[high_cor_pairs[, 2]],
+  Correlation = cor_matrix[high_cor_pairs]
+)
+
+high_cor_var_pairs |> 
+  knitr::kable(digits=4)
+```
+
+Remove the one with lower correlation with outcome in every pair:
+```{r}
+cor_tumor = cor_matrix["survival_months", "tumor_size"]
+cor_tstage = cor_matrix["survival_months", "t_stage"]
+
+c(cor_tumor, cor_tstage)
+```
+Keep tumor_size.
+
+```{r}
+cor_tumor = cor_matrix["survival_months", "x6th_stage"]
+cor_nstage = cor_matrix["survival_months", "n_stage"]
+cor_regional = cor_matrix["survival_months", "regional_node_positive"]
+
+c(cor_tumor, cor_nstage, cor_regional)
+```
+Keep tumor_size, delete the other two.
+
+Fit the reduced model:
+```{r}
+reduced_df = bc_data |> select(-t_stage, -n_stage, -x6th_stage)
+```
+
+```{r}
+reduced_model = lm(survival_months ~ ., data = reduced_df) 
+
+summary(reduced_model) 
+# |> broom::tidy() |> knitr::kable(digits=3)
+
+plot(reduced_model)
+```
+
+
+### Stepwise, Backward
+```{r}
 # backward regression 
-step_backward = step(mult.fit, direction='backward')
+#step_backward = step(mult.fit, direction='backward')
 
 # Criteria based procedures. both direction: choose the model with the smallest AIC value
 step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
   broom::tidy()
 
 knitr::kable(step_both, digits = 3)
-
 ```
 
+### LASSO
 ```{r}
 # fit a LASSO with lambda = 1
 # smaller lambda, tends to give large model (more predictors)
-mat=makeX(bc_data[1:14])
-fit_LASSO = cv.glmnet(mat, bc_data$survival_months)
+
+mat = makeX(bc_data[1:14])
+```
+
+```{r}
+fit_LASSO = cv.glmnet(mat, bc_data$survival_months, alpha = 1)
 plot(fit_LASSO)
-best_model = glmnet(mat, bc_data$survival_months,lambda=fit_LASSO$lambda.min)
+```
+
+```{r}
+best_lambda = fit_LASSO$lambda.min
+best_model = glmnet(mat, bc_data$survival_months, alpha=1, lambda=best_lambda)
 coef(best_model)
+```
 
+```{r}
+best_lambda
+```
 
-
-coef(fit_LASSO)
-
-fit_LASSO_logit = cv.glmnet(mat, bc_data$status,family="binomial")
+```{r}
+fit_LASSO_logit = cv.glmnet(mat, bc_data$status, family="binomial")
 plot(fit_LASSO_logit)
+```
 
-# cross validation to choose the value of lambda
-# lambda_seq = 10^seq(-3,0, by =0.1)
-# set.seed(123)
-# cv_object = cv.glmnet(as.matrix(bc_data[1:14]), y = bc_data$survival_months, lambda = lambda_seq, nfold = 5)
-# cv_object
+```{r}
+coef(fit_LASSO_logit)
+```
+
+
+## Model Validation & Performance Evaluation
+
+First, we will conduct a train-test split on bc_data:
+```{r}
+# train test split used for training and testing
+# Set seed for reproducibility
+set.seed(123)
+
+# Split data into training and testing sets (80% train, 20% test)
+train_indices <- sample(seq_len(nrow(bc_data)), 0.8 * nrow(bc_data))  # 80% train indices
+train_data <- bc_data[train_indices, ]  # Training data
+test_data <- bc_data[-train_indices, ]  # Testing data
+
+# Separate predictor variables (train_x, test_x) and target variable (train_y, test_y)
+train_x <- train_data[, -which(names(train_data) == "survival_months")]
+train_y <- train_data$survival_months
+
+test_x <- test_data[, -which(names(test_data) == "survival_months")]
+test_y <- test_data$survival_months
+```
+
+### Test MLR w/ all predictors
+```{r}
+# Fit the MLR model on the training data
+mult.fit <- lm(survival_months ~ ., data = train_data)
+
+# Predict on the test data
+predicted_test <- predict(mult.fit, newdata = test_data)
+
+# Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
+rmse <- sqrt(mean((predicted_test - test_data$survival_months)^2))
+rsquared <- summary(mult.fit)$r.squared
+
+rsquared
+```
+
+```{r}
+mlr_summary <- summary(mult.fit)
+adjusted_r_squared_mlr <- mlr_summary$adj.r.squared
+adjusted_r_squared_mlr
+```
+
+We will also cross-validate MLR to double-check:
+```{r}
+# Define the number of folds for cross-validation
+num_folds <- 5  # You can adjust the number of folds as needed
+
+# Define the control parameters for cross-validation
+ctrl <- trainControl(method = "cv", number = num_folds)
+
+# Train the MLR model with k-fold cross-validation
+mult.fit_cv <- train(survival_months ~ ., data = bc_data, method = "lm", trControl = ctrl)
+
+# Get cross-validated performance metrics
+cv_results <- mult.fit_cv$results
+print(cv_results)
+```
+The RMSE and R-squared appear similar.
+
+```{r}
+mlr_cv_summary <- summary(mult.fit)
+adjusted_r_squared_mlr <- mlr_summary$adj.r.squared
+adjusted_r_squared_mlr
+```
+The crude, all-in-one MLR performs better than linear regression with LASSO regularization in terms of adjusted R-squared.
+
+### Test MLR with reduced multicollinearity
+```{r}
 
 ```
 
-## The model we selected
+### Test Stepwise Regression Model
+```{r}
+# Create a named vector of coefficients
+coefficients <- c(
+  `(Intercept)` = 39.290750,
+  a_stage = 3.426435, 
+  estrogen_status = 3.744369, 
+  status = 29.713666
+)
 
+# Extract the predictor names from the coefficients
+selected_predictors <- names(coefficients)[-1]  # Exclude '(Intercept)'
 
-## MLR Validation 
+# Construct the formula for the model
+selected_formula <- reformulate(selected_predictors, response = "survival_months")
 
+# Fit the MLR model using the selected predictors and coefficients
+selected_model <- lm(selected_formula, data = train_data)  # Replace 'your_data' with your dataset
 
+# View the summary of the model
+summary(selected_model)
+```
 
+```{r}
+# Predict on the test data
+predicted_test <- predict(selected_model, newdata = test_data)
 
+# Calculate evaluation metrics: RMSE, R-squared, and adjusted R-squared
+actual_values <- test_data$survival_months  # Actual values from test data
 
+# RMSE
+rmse <- sqrt(mean((predicted_test - test_y)^2))
 
+# R-squared
+rsquared <- summary(selected_model)$r.squared
 
+# Adjusted R-squared
+num_predictors <- length(coef(selected_model)) - 1  # Number of predictors (excluding intercept)
+n <- length(test_y)  # Total number of samples
+adjusted_r_squared <- 1 - ((1 - rsquared) * (n - 1) / (n - num_predictors - 1))
 
+cat("RMSE:", rmse, "\n")
+cat("R-squared:", rsquared, "\n")
+cat("Adjusted R-squared:", adjusted_r_squared, "\n")
+```
+
+### Test LASSO
+```{r}
+# Train LASSO model using the best lambda obtained from cross-validation
+lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = best_lambda)
+```
+
+```{r}
+# Predict using the validation data
+predicted_val <- predict(lasso_model, newx = as.matrix(test_x))
+
+# Calculate evaluation metrics (e.g., Mean Squared Error and R-squared)
+rmse <- sqrt(mean((predicted_val - test_y)^2))
+rsquared <- 1 - (sum((test_y - predicted_val)^2) / sum((test_y - mean(test_y))^2))
+```
+
+```{r}
+# Calculate the residual sum of squares (RSS)
+rss <- sum((predicted_val - test_y)^2)
+
+# Get the number of predictors used in the LASSO model
+num_predictors <- sum(coef(lasso_model) != 0) - 1  # Exclude intercept (-1)
+
+# Get the total number of samples
+n <- length(test_y)
+
+# Calculate adjusted R-squared for LASSO model
+r_squared <- 1 - (rss / ((n - num_predictors - 1) * var(test_y)))
+adjusted_r_squared_lasso <- 1 - ((1 - r_squared) * (n - 1) / (n - num_predictors - 1))
+```
+
+```{r}
+adjusted_r_squared_lasso
+```
+
+## The model we selected...
+
+xxxx
+The reasons behind:
+
+## Compare performance for White vs Black groups
+And can you improve the prediction performance gap btw these two groups for your model?
+```{r}
+
+```
 
