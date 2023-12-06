@@ -163,7 +163,7 @@ bc_data =
 ``` r
 # Pairwise interaction and Correlation plot
 bc_data |> 
-  select(-status) |> 
+  select(-status, -survival_months) |> 
   pairs()
 ```
 
@@ -172,7 +172,7 @@ bc_data |>
 ``` r
 cor_matrix <- 
   bc_data |> 
-  select(-status) |> 
+  select(-status, -survival_months) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
   cor()
 
@@ -194,7 +194,6 @@ print(cor_matrix, digits = 3)
     ## progesterone_status    -0.02127  0.01858       -0.01349 -0.05763 -0.09372
     ## regional_node_examined -0.03335  0.00997       -0.00429  0.11410  0.32828
     ## regional_node_positive  0.01259 -0.00769        0.00585  0.24307  0.83807
-    ## survival_months        -0.00939  0.05509       -0.02559 -0.08572 -0.13958
     ##                        x6th_stage differentiate   grade  a_stage tumor_size
     ## age                      -0.01874       0.01570 -0.0993  0.02086   -0.07721
     ## race                     -0.00621      -0.00315 -0.0453  0.00710    0.00463
@@ -210,7 +209,6 @@ print(cor_matrix, digits = 3)
     ## progesterone_status      -0.10125       0.00896 -0.1799  0.02653   -0.06988
     ## regional_node_examined    0.31722      -0.05725  0.0844 -0.06901    0.10435
     ## regional_node_positive    0.77396      -0.02834  0.1353 -0.23285    0.24232
-    ## survival_months          -0.14484      -0.00450 -0.0677  0.07011   -0.08690
     ##                        estrogen_status progesterone_status
     ## age                             0.0598            -0.02127
     ## race                            0.0203             0.01858
@@ -226,7 +224,6 @@ print(cor_matrix, digits = 3)
     ## progesterone_status             0.5133             1.00000
     ## regional_node_examined         -0.0448            -0.01805
     ## regional_node_positive         -0.0860            -0.07807
-    ## survival_months                 0.1285             0.09602
     ##                        regional_node_examined regional_node_positive
     ## age                                  -0.03335                0.01259
     ## race                                  0.00997               -0.00769
@@ -242,23 +239,6 @@ print(cor_matrix, digits = 3)
     ## progesterone_status                  -0.01805               -0.07807
     ## regional_node_examined                1.00000                0.41158
     ## regional_node_positive                0.41158                1.00000
-    ## survival_months                      -0.02205               -0.13521
-    ##                        survival_months
-    ## age                           -0.00939
-    ## race                           0.05509
-    ## marital_status                -0.02559
-    ## t_stage                       -0.08572
-    ## n_stage                       -0.13958
-    ## x6th_stage                    -0.14484
-    ## differentiate                 -0.00450
-    ## grade                         -0.06767
-    ## a_stage                        0.07011
-    ## tumor_size                    -0.08690
-    ## estrogen_status                0.12847
-    ## progesterone_status            0.09602
-    ## regional_node_examined        -0.02205
-    ## regional_node_positive        -0.13521
-    ## survival_months                1.00000
 
 ``` r
 corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
@@ -652,45 +632,45 @@ coef(best_model)
 
     ## 39 x 1 sparse Matrix of class "dgCMatrix"
     ##                                   s0
-    ## (Intercept)             7.368113e+01
-    ## age                    -2.142717e-02
-    ## race1                  -3.085770e+00
+    ## (Intercept)             7.389688e+01
+    ## age                    -2.336744e-02
+    ## race1                  -3.135409e+00
     ## race2                   .           
-    ## race3                   1.222946e+00
+    ## race3                   1.283391e+00
     ## marital_status1         .           
-    ## marital_status2         6.117102e-01
-    ## marital_status3        -4.703561e+00
+    ## marital_status2         6.230925e-01
+    ## marital_status3        -4.849360e+00
     ## marital_status4         .           
-    ## marital_status5        -1.855357e-01
-    ## t_stage1                8.652487e-01
-    ## t_stage2               -3.573375e-01
+    ## marital_status5        -2.380726e-01
+    ## t_stage1                7.665824e-01
+    ## t_stage2               -4.628485e-01
     ## t_stage3                .           
     ## t_stage4                .           
-    ## n_stage1                1.276682e+00
+    ## n_stage1                1.286869e+00
     ## n_stage2                .           
-    ## n_stage3               -2.376975e+00
+    ## n_stage3               -2.376220e+00
     ## x6th_stage1             .           
     ## x6th_stage2             .           
     ## x6th_stage3             .           
     ## x6th_stage4             .           
-    ## x6th_stage5            -6.709162e-14
+    ## x6th_stage5            -6.647384e-14
     ## differentiate1          .           
-    ## differentiate2         -6.810615e-01
-    ## differentiate3         -3.144449e-01
+    ## differentiate2         -7.099347e-01
+    ## differentiate3         -5.741060e-01
     ## differentiate4          .           
     ## grade1                  .           
     ## grade2                  .           
-    ## grade3                 -4.181048e-06
-    ## grade4                 -1.159836e-06
-    ## a_stage1               -3.122687e+00
+    ## grade3                 -4.500262e-06
+    ## grade4                 -1.248387e-06
+    ## a_stage1               -3.230680e+00
     ## a_stage2                .           
-    ## tumor_size             -3.158191e-02
-    ## estrogen_status0       -8.168624e+00
+    ## tumor_size             -3.350628e-02
+    ## estrogen_status0       -8.204483e+00
     ## estrogen_status1        .           
-    ## progesterone_status0   -1.399913e+00
+    ## progesterone_status0   -1.418250e+00
     ## progesterone_status1    .           
-    ## regional_node_examined  6.624374e-02
-    ## regional_node_positive -2.770604e-01
+    ## regional_node_examined  6.992062e-02
+    ## regional_node_positive -2.801364e-01
 
 ``` r
 coef(fit_LASSO)
@@ -698,7 +678,7 @@ coef(fit_LASSO)
 
     ## 39 x 1 sparse Matrix of class "dgCMatrix"
     ##                                 s1
-    ## (Intercept)            71.79117955
+    ## (Intercept)            71.54135781
     ## age                     .         
     ## race1                   .         
     ## race2                   .         
@@ -731,12 +711,12 @@ coef(fit_LASSO)
     ## a_stage1                .         
     ## a_stage2                .         
     ## tumor_size              .         
-    ## estrogen_status0       -1.31625854
+    ## estrogen_status0       -0.39144718
     ## estrogen_status1        .         
     ## progesterone_status0    .         
     ## progesterone_status1    .         
     ## regional_node_examined  .         
-    ## regional_node_positive -0.09745595
+    ## regional_node_positive -0.05224268
 
 ``` r
 fit_LASSO_logit = cv.glmnet(mat, bc_data$status,family="binomial")

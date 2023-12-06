@@ -111,13 +111,13 @@ bc_data =
 ```{r}
 # Pairwise interaction and Correlation plot
 bc_data |> 
-  select(-status) |> 
+  select(-status, -survival_months) |> 
   pairs()
 
 
 cor_matrix <- 
   bc_data |> 
-  select(-status) |> 
+  select(-status, -survival_months) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
   cor()
 
