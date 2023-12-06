@@ -130,6 +130,13 @@ hist(sq_survival, main = "Distribution of square(survival months)", xlab = "squa
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-4-4.png)<!-- -->
 
+``` r
+iv_survival = (1/bc_data$survival_months)
+hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-4-5.png)<!-- -->
+
 ## Convert categorical data to factor
 
 ``` r
@@ -145,10 +152,10 @@ bc_data =
     grade = factor(grade, labels = c("1", "2", "3","4"),levels = c("1","2","3"," anaplastic; Grade IV")),
     a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
     estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
-    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
+    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive")),
+    status = factor(status, labels = c("0","1"),levels = c("Dead","Alive"))
     ) |> 
-  rename(regional_node_positive = reginol_node_positive) |> 
-  select(-status)
+  rename(regional_node_positive = reginol_node_positive) 
 ```
 
 ## Look at data interaction and collinearity
@@ -156,13 +163,16 @@ bc_data =
 ``` r
 # Pairwise interaction and Correlation plot
 bc_data |> 
+  select(-status) |> 
   pairs()
 ```
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
-cor_matrix <- bc_data |> 
+cor_matrix <- 
+  bc_data |> 
+  select(-status) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
   cor()
 
@@ -290,6 +300,58 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 mult.fit = 
   lm(survival_months ~ ., data = bc_data)
 
+logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
+summary(logit_fit)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = status ~ . - survival_months, family = "binomial", 
+    ##     data = bc_data)
+    ## 
+    ## Coefficients: (4 not defined because of singularities)
+    ##                          Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)             1.7760652  0.4874359   3.644 0.000269 ***
+    ## age                    -0.0241699  0.0056199  -4.301 1.70e-05 ***
+    ## race2                   0.5097774  0.1618144   3.150 0.001631 ** 
+    ## race3                   0.9235406  0.2486035   3.715 0.000203 ***
+    ## marital_status2         0.2102748  0.1417668   1.483 0.138010    
+    ## marital_status3        -0.6717802  0.3874652  -1.734 0.082957 .  
+    ## marital_status4         0.0677682  0.1750670   0.387 0.698683    
+    ## marital_status5        -0.0234528  0.2210320  -0.106 0.915498    
+    ## t_stage2               -0.2821932  0.1953845  -1.444 0.148656    
+    ## t_stage3               -0.5359069  0.3137751  -1.708 0.087649 .  
+    ## t_stage4               -0.9542320  0.4500716  -2.120 0.033991 *  
+    ## n_stage2               -0.6208066  0.2391834  -2.596 0.009445 ** 
+    ## n_stage3               -0.6910134  0.3007413  -2.298 0.021579 *  
+    ## x6th_stage2            -0.2143223  0.2318280  -0.924 0.355232    
+    ## x6th_stage3             0.0871350  0.2950089   0.295 0.767716    
+    ## x6th_stage4            -0.0887019  0.5289101  -0.168 0.866814    
+    ## x6th_stage5                    NA         NA      NA       NA    
+    ## differentiate2         -0.3884281  0.1049279  -3.702 0.000214 ***
+    ## differentiate3         -1.3615636  0.5324917  -2.557 0.010559 *  
+    ## differentiate4          0.5367572  0.1840814   2.916 0.003547 ** 
+    ## grade2                         NA         NA      NA       NA    
+    ## grade3                         NA         NA      NA       NA    
+    ## grade4                         NA         NA      NA       NA    
+    ## a_stage2                0.0401504  0.2662370   0.151 0.880128    
+    ## tumor_size             -0.0002492  0.0039726  -0.063 0.949990    
+    ## estrogen_status1        0.7418514  0.1778875   4.170 3.04e-05 ***
+    ## progesterone_status1    0.5860593  0.1276841   4.590 4.43e-06 ***
+    ## regional_node_examined  0.0358800  0.0071869   4.992 5.96e-07 ***
+    ## regional_node_positive -0.0790803  0.0153636  -5.147 2.64e-07 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 3444.7  on 4023  degrees of freedom
+    ## Residual deviance: 2952.0  on 3999  degrees of freedom
+    ## AIC: 3002
+    ## 
+    ## Number of Fisher Scoring iterations: 5
+
+``` r
 summary(mult.fit)
 ```
 
@@ -299,45 +361,46 @@ summary(mult.fit)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -74.685 -15.591   1.087  18.126  56.245 
+    ## -73.905 -15.151   0.226  16.184  57.401 
     ## 
     ## Coefficients: (4 not defined because of singularities)
-    ##                        Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)            58.98164    4.18486  14.094  < 2e-16 ***
-    ## age                    -0.04220    0.04138  -1.020  0.30787    
-    ## race2                   3.67154    1.40193   2.619  0.00885 ** 
-    ## race3                   5.58194    1.84998   3.017  0.00257 ** 
-    ## marital_status2         0.71309    1.11566   0.639  0.52276    
-    ## marital_status3        -6.24605    3.52093  -1.774  0.07614 .  
-    ## marital_status4        -0.03560    1.37859  -0.026  0.97940    
-    ## marital_status5        -0.78933    1.80857  -0.436  0.66254    
-    ## t_stage2               -1.61447    1.69125  -0.955  0.33984    
-    ## t_stage3                0.73762    2.76338   0.267  0.78954    
-    ## t_stage4               -2.25092    4.48353  -0.502  0.61567    
-    ## n_stage2               -0.58607    1.98650  -0.295  0.76799    
-    ## n_stage3               -3.37649    2.67197  -1.264  0.20642    
-    ## x6th_stage2             0.53765    1.82506   0.295  0.76832    
-    ## x6th_stage3            -0.65701    2.36107  -0.278  0.78082    
-    ## x6th_stage4             3.32794    5.15941   0.645  0.51895    
-    ## x6th_stage5                  NA         NA      NA       NA    
-    ## differentiate2         -0.98945    0.85155  -1.162  0.24533    
-    ## differentiate3         -2.95238    5.21782  -0.566  0.57154    
-    ## differentiate4         -0.02110    1.07890  -0.020  0.98440    
-    ## grade2                       NA         NA      NA       NA    
-    ## grade3                       NA         NA      NA       NA    
-    ## grade4                       NA         NA      NA       NA    
-    ## a_stage2                4.36505    2.67211   1.634  0.10243    
-    ## tumor_size             -0.05649    0.03434  -1.645  0.10002    
-    ## estrogen_status1        8.61299    1.68605   5.108  3.4e-07 ***
-    ## progesterone_status1    1.60271    1.10116   1.455  0.14562    
-    ## regional_node_examined  0.10692    0.04828   2.214  0.02686 *  
-    ## regional_node_positive -0.31396    0.14259  -2.202  0.02774 *  
+    ##                          Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)            36.4584902  3.8193833   9.546  < 2e-16 ***
+    ## age                     0.0364364  0.0371704   0.980  0.32702    
+    ## race2                   1.5911926  1.2583387   1.265  0.20612    
+    ## race3                   2.2807094  1.6615278   1.373  0.16994    
+    ## marital_status2        -0.0403054  1.0002832  -0.040  0.96786    
+    ## marital_status3        -3.3037925  3.1572889  -1.046  0.29544    
+    ## marital_status4        -0.3193347  1.2356947  -0.258  0.79609    
+    ## marital_status5        -0.5737841  1.6210719  -0.354  0.72339    
+    ## t_stage2               -0.3848148  1.5164113  -0.254  0.79969    
+    ## t_stage3                3.1833386  2.4781073   1.285  0.19901    
+    ## t_stage4                3.9450351  4.0235624   0.980  0.32691    
+    ## n_stage2                1.8578638  1.7822545   1.042  0.29728    
+    ## n_stage3               -1.4015767  2.3957759  -0.585  0.55857    
+    ## x6th_stage2             0.3640443  1.6358546   0.223  0.82390    
+    ## x6th_stage3            -2.4028024  2.1170181  -1.135  0.25645    
+    ## x6th_stage4             0.6484431  4.6252820   0.140  0.88851    
+    ## x6th_stage5                    NA         NA      NA       NA    
+    ## differentiate2          0.5516415  0.7648521   0.721  0.47080    
+    ## differentiate3          3.9487549  4.6820387   0.843  0.39906    
+    ## differentiate4         -1.1882734  0.9677626  -1.228  0.21957    
+    ## grade2                         NA         NA      NA       NA    
+    ## grade3                         NA         NA      NA       NA    
+    ## grade4                         NA         NA      NA       NA    
+    ## a_stage2                4.2167409  2.3950735   1.761  0.07838 .  
+    ## tumor_size             -0.0514424  0.0307797  -1.671  0.09474 .  
+    ## estrogen_status1        4.4127809  1.5171945   2.909  0.00365 ** 
+    ## progesterone_status1   -0.7240860  0.9897913  -0.732  0.46448    
+    ## regional_node_examined  0.0007842  0.0434113   0.018  0.98559    
+    ## regional_node_positive  0.0441596  0.1283212   0.344  0.73076    
+    ## status1                29.7066602  0.9491205  31.299  < 2e-16 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 22.47 on 3999 degrees of freedom
-    ## Multiple R-squared:  0.04476,    Adjusted R-squared:  0.03903 
-    ## F-statistic: 7.808 on 24 and 3999 DF,  p-value: < 2.2e-16
+    ## Residual standard error: 20.14 on 3998 degrees of freedom
+    ## Multiple R-squared:  0.2328, Adjusted R-squared:  0.228 
+    ## F-statistic: 48.52 on 25 and 3998 DF,  p-value: < 2.2e-16
 
 ``` r
 # QQ plot showing datafit 
@@ -358,136 +421,204 @@ plot(mult.fit, which = 4)
 step_backward = step(mult.fit, direction='backward')
 ```
 
-    ## Start:  AIC=25071.64
+    ## Start:  AIC=24191.73
     ## survival_months ~ age + race + marital_status + t_stage + n_stage + 
     ##     x6th_stage + differentiate + grade + a_stage + tumor_size + 
     ##     estrogen_status + progesterone_status + regional_node_examined + 
-    ##     regional_node_positive
+    ##     regional_node_positive + status
     ## 
     ## 
-    ## Step:  AIC=25071.64
+    ## Step:  AIC=24191.73
     ## survival_months ~ age + race + marital_status + t_stage + n_stage + 
     ##     x6th_stage + differentiate + a_stage + tumor_size + estrogen_status + 
-    ##     progesterone_status + regional_node_examined + regional_node_positive
+    ##     progesterone_status + regional_node_examined + regional_node_positive + 
+    ##     status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## - x6th_stage              3     437.4 2019476 25066
-    ## - differentiate           3     831.8 2019871 25067
-    ## - t_stage                 3    1210.1 2020249 25068
-    ## - marital_status          4    2694.9 2021734 25069
-    ## - n_stage                 1      43.9 2019083 25070
-    ## - age                     1     525.1 2019564 25071
-    ## <none>                                2019039 25072
-    ## - progesterone_status     1    1069.5 2020108 25072
-    ## - a_stage                 1    1347.3 2020386 25072
-    ## - tumor_size              1    1366.5 2020405 25072
-    ## - regional_node_positive  1    2447.6 2021487 25074
-    ## - regional_node_examined  1    2475.6 2021515 25075
-    ## - race                    2    4847.7 2023887 25077
-    ## - estrogen_status         1   13175.2 2032214 25096
+    ## - marital_status          4       539 1622216 24185
+    ## - x6th_stage              3       938 1622615 24188
+    ## - differentiate           3      1291 1622968 24189
+    ## - regional_node_examined  1         0 1621677 24190
+    ## - race                    2       837 1622513 24190
+    ## - t_stage                 3      1656 1623333 24190
+    ## - regional_node_positive  1        48 1621725 24190
+    ## - progesterone_status     1       217 1621894 24190
+    ## - age                     1       390 1622067 24191
+    ## - n_stage                 1       441 1622118 24191
+    ## <none>                                1621677 24192
+    ## - tumor_size              1      1133 1622810 24192
+    ## - a_stage                 1      1257 1622934 24193
+    ## - estrogen_status         1      3431 1625108 24198
+    ## - status                  1    397362 2019039 25072
     ## 
-    ## Step:  AIC=25066.51
-    ## survival_months ~ age + race + marital_status + t_stage + n_stage + 
+    ## Step:  AIC=24185.07
+    ## survival_months ~ age + race + t_stage + n_stage + x6th_stage + 
     ##     differentiate + a_stage + tumor_size + estrogen_status + 
-    ##     progesterone_status + regional_node_examined + regional_node_positive
+    ##     progesterone_status + regional_node_examined + regional_node_positive + 
+    ##     status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## - differentiate           3     887.3 2020364 25062
-    ## - marital_status          4    2781.9 2022258 25064
-    ## - t_stage                 3    1862.0 2021338 25064
-    ## - n_stage                 2    1538.8 2021015 25066
-    ## - age                     1     551.9 2020028 25066
-    ## <none>                                2019476 25066
-    ## - progesterone_status     1    1078.0 2020554 25067
-    ## - a_stage                 1    1294.7 2020771 25067
-    ## - tumor_size              1    1354.8 2020831 25067
-    ## - regional_node_positive  1    2424.9 2021901 25069
-    ## - regional_node_examined  1    2496.6 2021973 25070
-    ## - race                    2    4776.4 2024253 25072
-    ## - estrogen_status         1   13046.4 2032523 25090
+    ## - x6th_stage              3       971 1623187 24182
+    ## - differentiate           3      1324 1623540 24182
+    ## - regional_node_examined  1         0 1622216 24183
+    ## - regional_node_positive  1        38 1622254 24183
+    ## - t_stage                 3      1679 1623895 24183
+    ## - race                    2       983 1623199 24184
+    ## - progesterone_status     1       198 1622414 24184
+    ## - age                     1       401 1622616 24184
+    ## - n_stage                 1       453 1622669 24184
+    ## <none>                                1622216 24185
+    ## - tumor_size              1      1142 1623358 24186
+    ## - a_stage                 1      1289 1623505 24186
+    ## - estrogen_status         1      3461 1625676 24192
+    ## - status                  1    399518 2021734 25069
     ## 
-    ## Step:  AIC=25062.28
-    ## survival_months ~ age + race + marital_status + t_stage + n_stage + 
+    ## Step:  AIC=24181.48
+    ## survival_months ~ age + race + t_stage + n_stage + differentiate + 
     ##     a_stage + tumor_size + estrogen_status + progesterone_status + 
-    ##     regional_node_examined + regional_node_positive
+    ##     regional_node_examined + regional_node_positive + status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## - marital_status          4    2801.5 2023165 25060
-    ## - t_stage                 3    1979.3 2022343 25060
-    ## - age                     1     452.5 2020816 25061
-    ## - n_stage                 2    1693.4 2022057 25062
-    ## <none>                                2020364 25062
-    ## - progesterone_status     1    1215.3 2021579 25063
-    ## - a_stage                 1    1243.6 2021607 25063
-    ## - tumor_size              1    1399.2 2021763 25063
-    ## - regional_node_positive  1    2395.4 2022759 25065
-    ## - regional_node_examined  1    2499.4 2022863 25065
-    ## - race                    2    5009.1 2025373 25068
-    ## - estrogen_status         1   14389.1 2034753 25089
+    ## - n_stage                 2       126 1623313 24178
+    ## - differentiate           3      1228 1624415 24178
+    ## - regional_node_examined  1         0 1623187 24180
+    ## - regional_node_positive  1        30 1623217 24180
+    ## - race                    2       924 1624111 24180
+    ## - progesterone_status     1       183 1623370 24180
+    ## - age                     1       350 1623537 24180
+    ## - t_stage                 3      2343 1625530 24181
+    ## <none>                                1623187 24182
+    ## - tumor_size              1      1016 1624203 24182
+    ## - a_stage                 1      1244 1624431 24183
+    ## - estrogen_status         1      3386 1626573 24188
+    ## - status                  1    399071 2022258 25064
     ## 
-    ## Step:  AIC=25059.85
-    ## survival_months ~ age + race + t_stage + n_stage + a_stage + 
+    ## Step:  AIC=24177.79
+    ## survival_months ~ age + race + t_stage + differentiate + a_stage + 
     ##     tumor_size + estrogen_status + progesterone_status + regional_node_examined + 
-    ##     regional_node_positive
+    ##     regional_node_positive + status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## - t_stage                 3    2134.5 2025300 25058
-    ## - age                     1     590.2 2023755 25059
-    ## - n_stage                 2    1651.4 2024817 25059
-    ## <none>                                2023165 25060
-    ## - a_stage                 1    1302.2 2024467 25060
-    ## - progesterone_status     1    1347.7 2024513 25060
-    ## - tumor_size              1    1446.9 2024612 25061
-    ## - regional_node_examined  1    2562.5 2025728 25063
-    ## - regional_node_positive  1    2586.6 2025752 25063
-    ## - race                    2    6003.0 2029168 25068
-    ## - estrogen_status         1   14442.0 2037607 25086
+    ## - differentiate           3      1192 1624506 24175
+    ## - regional_node_examined  1         1 1623314 24176
+    ## - regional_node_positive  1        40 1623354 24176
+    ## - race                    2       945 1624259 24176
+    ## - progesterone_status     1       177 1623490 24176
+    ## - age                     1       347 1623660 24177
+    ## - t_stage                 3      2378 1625691 24178
+    ## <none>                                1623313 24178
+    ## - tumor_size              1      1042 1624355 24178
+    ## - a_stage                 1      1441 1624754 24179
+    ## - estrogen_status         1      3397 1626711 24184
+    ## - status                  1    400445 2023759 25063
     ## 
-    ## Step:  AIC=25058.09
-    ## survival_months ~ age + race + n_stage + a_stage + tumor_size + 
+    ## Step:  AIC=24174.75
+    ## survival_months ~ age + race + t_stage + a_stage + tumor_size + 
     ##     estrogen_status + progesterone_status + regional_node_examined + 
-    ##     regional_node_positive
+    ##     regional_node_positive + status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## - age                     1     569.3 2025869 25057
-    ## - n_stage                 2    1774.1 2027074 25058
-    ## <none>                                2025300 25058
-    ## - progesterone_status     1    1375.0 2026675 25059
-    ## - a_stage                 1    1380.8 2026680 25059
-    ## - regional_node_examined  1    2455.2 2027755 25061
-    ## - regional_node_positive  1    2632.3 2027932 25061
-    ## - tumor_size              1    4418.4 2029718 25065
-    ## - race                    2    5949.2 2031249 25066
-    ## - estrogen_status         1   14469.1 2039769 25085
+    ## - regional_node_examined  1         6 1624511 24173
+    ## - regional_node_positive  1        24 1624529 24173
+    ## - race                    2       866 1625372 24173
+    ## - progesterone_status     1       233 1624739 24173
+    ## - age                     1       254 1624760 24173
+    ## - t_stage                 3      2382 1626888 24175
+    ## <none>                                1624506 24175
+    ## - tumor_size              1      1000 1625505 24175
+    ## - a_stage                 1      1513 1626019 24176
+    ## - estrogen_status         1      3099 1627605 24180
+    ## - status                  1    400311 2024817 25059
     ## 
-    ## Step:  AIC=25057.23
-    ## survival_months ~ race + n_stage + a_stage + tumor_size + estrogen_status + 
-    ##     progesterone_status + regional_node_examined + regional_node_positive
-    ## 
-    ##                          Df Sum of Sq     RSS   AIC
-    ## - n_stage                 2    1777.9 2027647 25057
-    ## <none>                                2025869 25057
-    ## - a_stage                 1    1352.0 2027221 25058
-    ## - progesterone_status     1    1492.9 2027362 25058
-    ## - regional_node_examined  1    2554.4 2028423 25060
-    ## - regional_node_positive  1    2700.2 2028569 25061
-    ## - tumor_size              1    4193.1 2030062 25064
-    ## - race                    2    5941.5 2031810 25065
-    ## - estrogen_status         1   14113.8 2039983 25083
-    ## 
-    ## Step:  AIC=25056.76
-    ## survival_months ~ race + a_stage + tumor_size + estrogen_status + 
-    ##     progesterone_status + regional_node_examined + regional_node_positive
+    ## Step:  AIC=24172.76
+    ## survival_months ~ age + race + t_stage + a_stage + tumor_size + 
+    ##     estrogen_status + progesterone_status + regional_node_positive + 
+    ##     status
     ## 
     ##                          Df Sum of Sq     RSS   AIC
-    ## <none>                                2027647 25057
-    ## - progesterone_status     1    1588.1 2029235 25058
-    ## - a_stage                 1    1891.4 2029538 25058
-    ## - regional_node_examined  1    2738.5 2030385 25060
-    ## - tumor_size              1    4952.4 2032599 25065
-    ## - race                    2    6160.2 2033807 25065
-    ## - estrogen_status         1   14365.3 2042012 25083
-    ## - regional_node_positive  1   23221.7 2050868 25101
+    ## - regional_node_positive  1        18 1624529 24171
+    ## - race                    2       867 1625379 24171
+    ## - progesterone_status     1       232 1624743 24171
+    ## - age                     1       252 1624764 24171
+    ## - t_stage                 3      2379 1626891 24173
+    ## <none>                                1624511 24173
+    ## - tumor_size              1      1003 1625515 24173
+    ## - a_stage                 1      1518 1626030 24174
+    ## - estrogen_status         1      3094 1627606 24178
+    ## - status                  1    403062 2027574 25063
+    ## 
+    ## Step:  AIC=24170.8
+    ## survival_months ~ age + race + t_stage + a_stage + tumor_size + 
+    ##     estrogen_status + progesterone_status + status
+    ## 
+    ##                       Df Sum of Sq     RSS   AIC
+    ## - race                 2       866 1625395 24169
+    ## - progesterone_status  1       231 1624760 24169
+    ## - age                  1       249 1624779 24169
+    ## - t_stage              3      2393 1626923 24171
+    ## <none>                             1624529 24171
+    ## - tumor_size           1      1036 1625565 24171
+    ## - a_stage              1      1639 1626169 24173
+    ## - estrogen_status      1      3104 1627633 24176
+    ## - status               1    422474 2047003 25099
+    ## 
+    ## Step:  AIC=24168.95
+    ## survival_months ~ age + t_stage + a_stage + tumor_size + estrogen_status + 
+    ##     progesterone_status + status
+    ## 
+    ##                       Df Sum of Sq     RSS   AIC
+    ## - progesterone_status  1       227 1625622 24168
+    ## - age                  1       265 1625660 24168
+    ## - t_stage              3      2381 1627776 24169
+    ## <none>                             1625395 24169
+    ## - tumor_size           1      1056 1626451 24170
+    ## - a_stage              1      1632 1627027 24171
+    ## - estrogen_status      1      3169 1628564 24175
+    ## - status               1    428139 2053534 25108
+    ## 
+    ## Step:  AIC=24167.51
+    ## survival_months ~ age + t_stage + a_stage + tumor_size + estrogen_status + 
+    ##     status
+    ## 
+    ##                   Df Sum of Sq     RSS   AIC
+    ## - age              1       295 1625917 24166
+    ## - t_stage          3      2349 1627971 24167
+    ## <none>                         1625622 24168
+    ## - tumor_size       1      1032 1626655 24168
+    ## - a_stage          1      1644 1627266 24170
+    ## - estrogen_status  1      3167 1628789 24173
+    ## - status           1    429866 2055488 25110
+    ## 
+    ## Step:  AIC=24166.24
+    ## survival_months ~ t_stage + a_stage + tumor_size + estrogen_status + 
+    ##     status
+    ## 
+    ##                   Df Sum of Sq     RSS   AIC
+    ## - t_stage          3      2376 1628293 24166
+    ## <none>                         1625917 24166
+    ## - tumor_size       1      1063 1626980 24167
+    ## - a_stage          1      1672 1627589 24168
+    ## - estrogen_status  1      3316 1629234 24172
+    ## - status           1    430775 2056692 25110
+    ## 
+    ## Step:  AIC=24166.12
+    ## survival_months ~ a_stage + tumor_size + estrogen_status + status
+    ## 
+    ##                   Df Sum of Sq     RSS   AIC
+    ## - tumor_size       1       792 1629085 24166
+    ## <none>                         1628293 24166
+    ## - a_stage          1       840 1629132 24166
+    ## - estrogen_status  1      3289 1631582 24172
+    ## - status           1    431297 2059590 25110
+    ## 
+    ## Step:  AIC=24166.07
+    ## survival_months ~ a_stage + estrogen_status + status
+    ## 
+    ##                   Df Sum of Sq     RSS   AIC
+    ## <none>                         1629085 24166
+    ## - a_stage          1      1043 1630128 24167
+    ## - estrogen_status  1      3391 1632476 24172
+    ## - status           1    441605 2070690 25129
 
 ``` r
 # Criteria based procedures. both direction: choose the model with the smallest AIC value
@@ -497,42 +628,122 @@ step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
 knitr::kable(step_both, digits = 3)
 ```
 
-| term                   | estimate | std.error | statistic | p.value |
-|:-----------------------|---------:|----------:|----------:|--------:|
-| (Intercept)            |   55.101 |     3.147 |    17.510 |   0.000 |
-| race2                  |    4.156 |     1.375 |     3.024 |   0.003 |
-| race3                  |    6.116 |     1.821 |     3.358 |   0.001 |
-| a_stage2               |    4.737 |     2.448 |     1.935 |   0.053 |
-| tumor_size             |   -0.054 |     0.017 |    -3.132 |   0.002 |
-| estrogen_status1       |    8.851 |     1.659 |     5.333 |   0.000 |
-| progesterone_status1   |    1.937 |     1.092 |     1.773 |   0.076 |
-| regional_node_examined |    0.112 |     0.048 |     2.329 |   0.020 |
-| regional_node_positive |   -0.542 |     0.080 |    -6.781 |   0.000 |
+| term             | estimate | std.error | statistic | p.value |
+|:-----------------|---------:|----------:|----------:|--------:|
+| (Intercept)      |   39.291 |     2.376 |    16.537 |   0.000 |
+| a_stage2         |    3.426 |     2.136 |     1.604 |   0.109 |
+| estrogen_status1 |    3.744 |     1.294 |     2.893 |   0.004 |
+| status1          |   29.714 |     0.900 |    33.011 |   0.000 |
 
 ``` r
 # fit a LASSO with lambda = 1
 # smaller lambda, tends to give large model (more predictors)
-fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
+mat=makeX(bc_data[1:14])
+fit_LASSO = cv.glmnet(mat, bc_data$survival_months)
+plot(fit_LASSO)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+best_model = glmnet(mat, bc_data$survival_months,lambda=fit_LASSO$lambda.min)
+coef(best_model)
+```
+
+    ## 39 x 1 sparse Matrix of class "dgCMatrix"
+    ##                                   s0
+    ## (Intercept)             7.368113e+01
+    ## age                    -2.142717e-02
+    ## race1                  -3.085770e+00
+    ## race2                   .           
+    ## race3                   1.222946e+00
+    ## marital_status1         .           
+    ## marital_status2         6.117102e-01
+    ## marital_status3        -4.703561e+00
+    ## marital_status4         .           
+    ## marital_status5        -1.855357e-01
+    ## t_stage1                8.652487e-01
+    ## t_stage2               -3.573375e-01
+    ## t_stage3                .           
+    ## t_stage4                .           
+    ## n_stage1                1.276682e+00
+    ## n_stage2                .           
+    ## n_stage3               -2.376975e+00
+    ## x6th_stage1             .           
+    ## x6th_stage2             .           
+    ## x6th_stage3             .           
+    ## x6th_stage4             .           
+    ## x6th_stage5            -6.709162e-14
+    ## differentiate1          .           
+    ## differentiate2         -6.810615e-01
+    ## differentiate3         -3.144449e-01
+    ## differentiate4          .           
+    ## grade1                  .           
+    ## grade2                  .           
+    ## grade3                 -4.181048e-06
+    ## grade4                 -1.159836e-06
+    ## a_stage1               -3.122687e+00
+    ## a_stage2                .           
+    ## tumor_size             -3.158191e-02
+    ## estrogen_status0       -8.168624e+00
+    ## estrogen_status1        .           
+    ## progesterone_status0   -1.399913e+00
+    ## progesterone_status1    .           
+    ## regional_node_examined  6.624374e-02
+    ## regional_node_positive -2.770604e-01
+
+``` r
 coef(fit_LASSO)
 ```
 
-    ## 15 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                s0
-    ## (Intercept)            67.3525076
-    ## age                     .        
-    ## race                    0.5382473
-    ## marital_status          .        
-    ## t_stage                 .        
-    ## n_stage                -0.2010795
-    ## x6th_stage             -1.1722286
-    ## differentiate           .        
-    ## grade                   .        
-    ## a_stage                 .        
-    ## tumor_size              .        
-    ## estrogen_status         6.5647751
-    ## progesterone_status     0.3668584
-    ## regional_node_examined  .        
-    ## regional_node_positive -0.1330287
+    ## 39 x 1 sparse Matrix of class "dgCMatrix"
+    ##                                 s1
+    ## (Intercept)            71.79117955
+    ## age                     .         
+    ## race1                   .         
+    ## race2                   .         
+    ## race3                   .         
+    ## marital_status1         .         
+    ## marital_status2         .         
+    ## marital_status3         .         
+    ## marital_status4         .         
+    ## marital_status5         .         
+    ## t_stage1                .         
+    ## t_stage2                .         
+    ## t_stage3                .         
+    ## t_stage4                .         
+    ## n_stage1                .         
+    ## n_stage2                .         
+    ## n_stage3                .         
+    ## x6th_stage1             .         
+    ## x6th_stage2             .         
+    ## x6th_stage3             .         
+    ## x6th_stage4             .         
+    ## x6th_stage5             .         
+    ## differentiate1          .         
+    ## differentiate2          .         
+    ## differentiate3          .         
+    ## differentiate4          .         
+    ## grade1                  .         
+    ## grade2                  .         
+    ## grade3                  .         
+    ## grade4                  .         
+    ## a_stage1                .         
+    ## a_stage2                .         
+    ## tumor_size              .         
+    ## estrogen_status0       -1.31625854
+    ## estrogen_status1        .         
+    ## progesterone_status0    .         
+    ## progesterone_status1    .         
+    ## regional_node_examined  .         
+    ## regional_node_positive -0.09745595
+
+``` r
+fit_LASSO_logit = cv.glmnet(mat, bc_data$status,family="binomial")
+plot(fit_LASSO_logit)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
 
 ``` r
 # cross validation to choose the value of lambda

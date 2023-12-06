@@ -80,6 +80,9 @@ hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt
 
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
+
+iv_survival = (1/bc_data$survival_months)
+hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
 ```
 
 
@@ -97,10 +100,10 @@ bc_data =
     grade = factor(grade, labels = c("1", "2", "3","4"),levels = c("1","2","3"," anaplastic; Grade IV")),
     a_stage = factor(a_stage, labels = c("1","2"),levels = c("Distant","Regional")),
     estrogen_status = factor(estrogen_status, labels = c("0","1"),levels = c("Negative","Positive")),
-    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive"))
+    progesterone_status = factor(progesterone_status, labels = c("0","1"),levels = c("Negative","Positive")),
+    status = factor(status, labels = c("0","1"),levels = c("Dead","Alive"))
     ) |> 
-  rename(regional_node_positive = reginol_node_positive) |> 
-  select(-status)
+  rename(regional_node_positive = reginol_node_positive) 
 ```
 
 
@@ -108,10 +111,13 @@ bc_data =
 ```{r}
 # Pairwise interaction and Correlation plot
 bc_data |> 
+  select(-status) |> 
   pairs()
 
 
-cor_matrix <- bc_data |> 
+cor_matrix <- 
+  bc_data |> 
+  select(-status) |> 
   mutate(across(where(is.factor), as.numeric)) |> 
   cor()
 
@@ -147,6 +153,10 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 mult.fit = 
   lm(survival_months ~ ., data = bc_data)
 
+logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
+summary(logit_fit)
+
+
 summary(mult.fit)
 
 # QQ plot showing datafit 
@@ -171,8 +181,18 @@ knitr::kable(step_both, digits = 3)
 ```{r}
 # fit a LASSO with lambda = 1
 # smaller lambda, tends to give large model (more predictors)
-fit_LASSO = glmnet(as.matrix(bc_data[1:14]), bc_data$survival_months, lambda = 1)
+mat=makeX(bc_data[1:14])
+fit_LASSO = cv.glmnet(mat, bc_data$survival_months)
+plot(fit_LASSO)
+best_model = glmnet(mat, bc_data$survival_months,lambda=fit_LASSO$lambda.min)
+coef(best_model)
+
+
+
 coef(fit_LASSO)
+
+fit_LASSO_logit = cv.glmnet(mat, bc_data$status,family="binomial")
+plot(fit_LASSO_logit)
 
 # cross validation to choose the value of lambda
 # lambda_seq = 10^seq(-3,0, by =0.1)
