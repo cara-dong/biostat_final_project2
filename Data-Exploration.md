@@ -294,61 +294,12 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ### MLR with all predictors
 
 ``` r
-mult.fit = 
-  lm(survival_months ~ ., data = bc_data)
+mult.fit = lm(survival_months ~ ., data = bc_data)
 
-logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
-summary(logit_fit)
-```
+#logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
+#summary(logit_fit)
 
-    ## 
-    ## Call:
-    ## glm(formula = status ~ . - survival_months, family = "binomial", 
-    ##     data = bc_data)
-    ## 
-    ## Coefficients: (4 not defined because of singularities)
-    ##                          Estimate Std. Error z value Pr(>|z|)    
-    ## (Intercept)             1.7384013  0.4902930   3.546 0.000392 ***
-    ## age                    -0.0225994  0.0056640  -3.990 6.61e-05 ***
-    ## race2                   0.5064409  0.1634261   3.099 0.001942 ** 
-    ## race3                   0.8949725  0.2497782   3.583 0.000340 ***
-    ## marital_status2         0.1858725  0.1437432   1.293 0.195981    
-    ## marital_status3        -0.7277778  0.3906564  -1.863 0.062468 .  
-    ## marital_status4         0.0520708  0.1772165   0.294 0.768891    
-    ## marital_status5        -0.0442531  0.2243760  -0.197 0.843650    
-    ## t_stage2               -0.2556727  0.1970562  -1.297 0.194473    
-    ## t_stage3               -0.5007362  0.3160850  -1.584 0.113152    
-    ## t_stage4               -0.9237887  0.4510428  -2.048 0.040549 *  
-    ## n_stage2               -0.6159097  0.2415728  -2.550 0.010785 *  
-    ## n_stage3               -0.7150527  0.3024504  -2.364 0.018069 *  
-    ## x6th_stage2            -0.2266921  0.2340636  -0.969 0.332791    
-    ## x6th_stage3             0.0969985  0.2977671   0.326 0.744611    
-    ## x6th_stage4            -0.1157120  0.5302440  -0.218 0.827254    
-    ## x6th_stage5                    NA         NA      NA       NA    
-    ## differentiate2         -0.4052842  0.1058755  -3.828 0.000129 ***
-    ## differentiate3         -1.3864065  0.5333164  -2.600 0.009333 ** 
-    ## differentiate4          0.5052658  0.1845283   2.738 0.006179 ** 
-    ## grade2                         NA         NA      NA       NA    
-    ## grade3                         NA         NA      NA       NA    
-    ## grade4                         NA         NA      NA       NA    
-    ## a_stage2                0.0370807  0.2664335   0.139 0.889312    
-    ## tumor_size             -0.0007673  0.0039941  -0.192 0.847658    
-    ## estrogen_status1        0.7616541  0.1786036   4.264 2.00e-05 ***
-    ## progesterone_status1    0.5768740  0.1290909   4.469 7.87e-06 ***
-    ## regional_node_examined  0.0360605  0.0072658   4.963 6.94e-07 ***
-    ## regional_node_positive -0.0793151  0.0154389  -5.137 2.79e-07 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## (Dispersion parameter for binomial family taken to be 1)
-    ## 
-    ##     Null deviance: 3394.0  on 4005  degrees of freedom
-    ## Residual deviance: 2904.8  on 3981  degrees of freedom
-    ## AIC: 2954.8
-    ## 
-    ## Number of Fisher Scoring iterations: 5
 
-``` r
 summary(mult.fit)
 ```
 
@@ -401,18 +352,53 @@ summary(mult.fit)
 
 ``` r
 # QQ plot showing datafit 
-plot(mult.fit, which = 2)
+plot(mult.fit)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->
 
 ``` r
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-5.png)<!-- -->
 Looks like doesn’t need a transformation on the outcome survival months.
+
+Use box-cox transformation to double-check if we need to make
+transformations.
+
+``` r
+# boxcox(mult.fit)
+```
+
+Since lambda approaches 1 and its 95% CI lies close to 1, it suggests
+that we do not need to make any transformation.
+
+Based on Cook’s distance, we will investigate the three influential
+points:
+
+``` r
+view_influential = bc_data[c(278, 1553, 1584), ]
+view_influential
+```
+
+    ##      age race marital_status t_stage n_stage x6th_stage differentiate grade
+    ## 278   52    1              4       3       3          5             3     4
+    ## 1553  58    2              4       1       2          3             3     4
+    ## 1584  50    2              2       2       1          2             1     2
+    ##      a_stage tumor_size estrogen_status progesterone_status
+    ## 278        2        100               1                   1
+    ## 1553       2         19               0                   0
+    ## 1584       2         25               1                   1
+    ##      regional_node_examined regional_node_positive survival_months status
+    ## 278                      23                     17              16      0
+    ## 1553                     47                      7               9      0
+    ## 1584                     39                      3              71      1
+
+After investigation, it looks like these three points are not negatively
+impacting the results. So, we will not remove them. They have a reason
+to be there.
 
 ### MLR reducing multicollinearity using correlation matrix
 
@@ -527,11 +513,17 @@ summary(reduced_model)
 
 ``` r
 # |> broom::tidy() |> knitr::kable(digits=3)
+```
 
+Estrogen_status1 seems to be the most influential factor .
+
+``` r
 plot(reduced_model)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-4.png)<!-- -->
+
+Normality fit looks better at the left tail.
 
 ### Stepwise, Backward
 
@@ -568,7 +560,7 @@ fit_LASSO = cv.glmnet(mat, bc_data$survival_months, alpha = 1)
 plot(fit_LASSO)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 best_lambda = fit_LASSO$lambda.min
@@ -578,58 +570,58 @@ coef(best_model)
 
     ## 39 x 1 sparse Matrix of class "dgCMatrix"
     ##                                   s0
-    ## (Intercept)             7.320420e+01
-    ## age                    -4.529766e-03
-    ## race1                  -2.845638e+00
+    ## (Intercept)             7.387678e+01
+    ## age                    -1.078760e-02
+    ## race1                  -3.008502e+00
     ## race2                   .           
-    ## race3                   1.289409e+00
+    ## race3                   1.486667e+00
     ## marital_status1         .           
-    ## marital_status2         5.435657e-01
-    ## marital_status3        -3.222507e+00
+    ## marital_status2         5.816162e-01
+    ## marital_status3        -3.696471e+00
     ## marital_status4         .           
-    ## marital_status5         .           
-    ## t_stage1                8.046251e-01
-    ## t_stage2               -4.056180e-02
+    ## marital_status5        -1.655770e-01
+    ## t_stage1                4.841804e-01
+    ## t_stage2               -3.926243e-01
     ## t_stage3                .           
     ## t_stage4                .           
-    ## n_stage1                7.650783e-01
+    ## n_stage1                8.067125e-01
     ## n_stage2                .           
-    ## n_stage3               -2.369217e+00
-    ## x6th_stage1             2.196481e-01
+    ## n_stage3               -2.369885e+00
+    ## x6th_stage1             2.016864e-01
     ## x6th_stage2             .           
     ## x6th_stage3             .           
     ## x6th_stage4             .           
     ## x6th_stage5             .           
-    ## differentiate1          2.715506e-01
-    ## differentiate2         -5.763277e-01
-    ## differentiate3          .           
+    ## differentiate1          3.158119e-01
+    ## differentiate2         -6.322311e-01
+    ## differentiate3         -7.110511e-01
     ## differentiate4          .           
     ## grade1                  .           
-    ## grade2                  5.130475e-04
-    ## grade3                  .           
-    ## grade4                  .           
-    ## a_stage1               -3.317514e+00
-    ## a_stage2                7.270694e-13
-    ## tumor_size             -3.019736e-02
-    ## estrogen_status0       -8.447549e+00
+    ## grade2                  1.773918e-06
+    ## grade3                 -6.511434e-04
+    ## grade4                 -2.027346e-03
+    ## a_stage1               -3.664116e+00
+    ## a_stage2                1.624892e-12
+    ## tumor_size             -3.664301e-02
+    ## estrogen_status0       -8.565382e+00
     ## estrogen_status1        .           
-    ## progesterone_status0   -1.287088e+00
-    ## progesterone_status1    1.115183e-12
-    ## regional_node_examined  5.258240e-02
-    ## regional_node_positive -2.792675e-01
+    ## progesterone_status0   -1.347338e+00
+    ## progesterone_status1    1.606878e-12
+    ## regional_node_examined  6.436147e-02
+    ## regional_node_positive -2.890161e-01
 
 ``` r
 best_lambda
 ```
 
-    ## [1] 0.246539
+    ## [1] 0.1864977
 
 ``` r
 fit_LASSO_logit = cv.glmnet(mat, bc_data$status, family="binomial")
 plot(fit_LASSO_logit)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 coef(fit_LASSO_logit)
@@ -637,9 +629,9 @@ coef(fit_LASSO_logit)
 
     ## 39 x 1 sparse Matrix of class "dgCMatrix"
     ##                                   s1
-    ## (Intercept)             2.117418e+00
-    ## age                    -1.113388e-03
-    ## race1                  -1.030604e-01
+    ## (Intercept)             2.024847e+00
+    ## age                     .           
+    ## race1                   .           
     ## race2                   .           
     ## race3                   .           
     ## marital_status1         .           
@@ -647,35 +639,35 @@ coef(fit_LASSO_logit)
     ## marital_status3         .           
     ## marital_status4         .           
     ## marital_status5         .           
-    ## t_stage1                9.967541e-02
+    ## t_stage1                3.363993e-02
     ## t_stage2                .           
     ## t_stage3                .           
-    ## t_stage4               -2.849163e-01
-    ## n_stage1                3.005845e-01
+    ## t_stage4               -1.299144e-01
+    ## n_stage1                2.623441e-01
     ## n_stage2                .           
-    ## n_stage3               -2.312864e-01
-    ## x6th_stage1             6.184819e-04
+    ## n_stage3               -2.128179e-01
+    ## x6th_stage1             .           
     ## x6th_stage2             .           
     ## x6th_stage3             .           
     ## x6th_stage4             .           
-    ## x6th_stage5             .           
+    ## x6th_stage5            -9.423639e-16
     ## differentiate1          .           
-    ## differentiate2         -2.173147e-01
-    ## differentiate3         -4.963612e-03
+    ## differentiate2         -1.575132e-01
+    ## differentiate3          .           
     ## differentiate4          .           
     ## grade1                  .           
     ## grade2                  .           
-    ## grade3                 -5.447183e-05
-    ## grade4                 -1.797397e-05
+    ## grade3                 -2.163465e-15
+    ## grade4                  .           
     ## a_stage1                .           
     ## a_stage2                .           
-    ## tumor_size             -1.378630e-03
-    ## estrogen_status0       -5.617933e-01
-    ## estrogen_status1        1.054623e-12
-    ## progesterone_status0   -4.276115e-01
-    ## progesterone_status1    2.982028e-13
+    ## tumor_size             -9.458872e-04
+    ## estrogen_status0       -5.248956e-01
+    ## estrogen_status1        9.588132e-13
+    ## progesterone_status0   -3.647179e-01
+    ## progesterone_status1    2.603790e-13
     ## regional_node_examined  .           
-    ## regional_node_positive -4.790896e-02
+    ## regional_node_positive -4.702258e-02
 
 ## Model Validation & Performance Evaluation
 
@@ -747,18 +739,56 @@ print(cv_results)
 
 The RMSE and R-squared appear similar.
 
+### Test MLR with reduced multicollinearity
+
 ``` r
-mlr_cv_summary <- summary(mult.fit)
-adjusted_r_squared_mlr <- mlr_summary$adj.r.squared
-adjusted_r_squared_mlr
+# Fit the MLR model on the training data
+reduced_train = train_data |> select(-t_stage, n_stage, x6th_stage)
+reduced_test = test_data |> select(-t_stage, n_stage, x6th_stage)
+  
+reduced_fit <- lm(survival_months ~ ., data = reduced_train)
+
+# Predict on the test data
+predicted_test <- predict(reduced_fit, newdata = reduced_test)
+
+# Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
+rmse <- sqrt(mean((predicted_test - reduced_test$survival_months)^2))
+rsquared <- summary(reduced_fit)$r.squared
+
+rsquared
 ```
 
-    ## [1] 0.2269717
+    ## [1] 0.232238
 
-The crude, all-in-one MLR performs better than linear regression with
-LASSO regularization in terms of adjusted R-squared.
+``` r
+mlr_summary_reduced <- summary(reduced_model)
+adjusted_r_squared_mlr_reduced <- mlr_summary_reduced$adj.r.squared
+adjusted_r_squared_mlr_reduced
+```
 
-### Test MLR with reduced multicollinearity
+    ## [1] 0.2216511
+
+We will also cross-validate MLR to double-check:
+
+``` r
+# Define the number of folds for cross-validation
+num_folds <- 5  # You can adjust the number of folds as needed
+
+# Define the control parameters for cross-validation
+ctrl <- trainControl(method = "cv", number = num_folds)
+
+# Train the MLR model with k-fold cross-validation
+reduced_fit_cv <- train(survival_months ~ ., data = reduced_df, method = "lm", trControl = ctrl)
+
+# Get cross-validated performance metrics
+cv_results_reduced <- reduced_fit_cv$results
+print(cv_results_reduced)
+```
+
+    ##   intercept    RMSE  Rsquared      MAE    RMSESD RsquaredSD     MAESD
+    ## 1      TRUE 19.9594 0.2159712 16.52566 0.3346709 0.03943883 0.2933473
+
+The RMSE and R-squared appear similar to that before cross-validation.
 
 ### Test Stepwise Regression Model
 
@@ -875,13 +905,152 @@ adjusted_r_squared_lasso <- 1 - ((1 - r_squared) * (n - 1) / (n - num_predictors
 adjusted_r_squared_lasso
 ```
 
-    ## [1] -2.119206
+    ## [1] -2.172154
 
 ## The model we selected…
 
-xxxx The reasons behind:
+xxxx The reasons behind: The crude, all-in-one MLR performs better than
+linear regression with LASSO regularization in terms of adjusted
+R-squared. all-predictor one compared with the reduced-predictor one?
 
-## Compare performance for White vs Black groups
+## Additional: Logistic Regression
+
+``` r
+# Fit logistic regression model
+logistic_model <- glm(status ~ ., data = bc_data, family = "binomial")
+
+# Summary of the logistic regression model
+summary(logistic_model)
+```
+
+    ## 
+    ## Call:
+    ## glm(formula = status ~ ., family = "binomial", data = bc_data)
+    ## 
+    ## Coefficients: (4 not defined because of singularities)
+    ##                         Estimate Std. Error z value Pr(>|z|)    
+    ## (Intercept)            -1.235181   0.595384  -2.075 0.038024 *  
+    ## age                    -0.027559   0.006541  -4.213 2.52e-05 ***
+    ## race2                   0.446184   0.191402   2.331 0.019746 *  
+    ## race3                   0.802021   0.289947   2.766 0.005673 ** 
+    ## marital_status2         0.139183   0.168233   0.827 0.408054    
+    ## marital_status3        -0.697379   0.484014  -1.441 0.149635    
+    ## marital_status4         0.086582   0.208441   0.415 0.677866    
+    ## marital_status5        -0.064943   0.262848  -0.247 0.804851    
+    ## t_stage2               -0.256951   0.230561  -1.114 0.265081    
+    ## t_stage3               -0.722445   0.373958  -1.932 0.053373 .  
+    ## t_stage4               -1.349809   0.573542  -2.353 0.018600 *  
+    ## n_stage2               -0.709268   0.280586  -2.528 0.011478 *  
+    ## n_stage3               -0.665586   0.352349  -1.889 0.058892 .  
+    ## x6th_stage2            -0.226037   0.269016  -0.840 0.400776    
+    ## x6th_stage3             0.223002   0.343211   0.650 0.515853    
+    ## x6th_stage4            -0.022565   0.665945  -0.034 0.972970    
+    ## x6th_stage5                   NA         NA      NA       NA    
+    ## differentiate2         -0.418227   0.123468  -3.387 0.000706 ***
+    ## differentiate3         -1.708037   0.800223  -2.134 0.032806 *  
+    ## differentiate4          0.617809   0.208358   2.965 0.003026 ** 
+    ## grade2                        NA         NA      NA       NA    
+    ## grade3                        NA         NA      NA       NA    
+    ## grade4                        NA         NA      NA       NA    
+    ## a_stage2               -0.214702   0.327314  -0.656 0.511856    
+    ## tumor_size              0.002832   0.004744   0.597 0.550488    
+    ## estrogen_status1        0.372523   0.229289   1.625 0.104230    
+    ## progesterone_status1    0.504229   0.153494   3.285 0.001020 ** 
+    ## regional_node_examined  0.031695   0.008091   3.918 8.94e-05 ***
+    ## regional_node_positive -0.076363   0.018016  -4.239 2.25e-05 ***
+    ## survival_months         0.062550   0.002852  21.934  < 2e-16 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## (Dispersion parameter for binomial family taken to be 1)
+    ## 
+    ##     Null deviance: 3394.0  on 4005  degrees of freedom
+    ## Residual deviance: 2210.9  on 3980  degrees of freedom
+    ## AIC: 2262.9
+    ## 
+    ## Number of Fisher Scoring iterations: 6
+
+``` r
+# Predict on the training set
+predicted <- predict(logistic_model, type = "response")
+
+# Display the predicted values
+head(predicted)
+```
+
+    ##         1         2         3         4         5         6 
+    ## 0.8973973 0.8732727 0.8409712 0.9640071 0.7461318 0.9900037
+
+Evaluate model performance on training set:
+
+``` r
+library(caret)
+library(pROC)
+```
+
+    ## Type 'citation("pROC")' for a citation.
+
+    ## 
+    ## Attaching package: 'pROC'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     cov, smooth, var
+
+``` r
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(as.factor(round(predicted)), as.factor(bc_data$status))
+
+# Print the confusion matrix
+print(conf_matrix)
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction    0    1
+    ##          0  268   73
+    ##          1  335 3330
+    ##                                           
+    ##                Accuracy : 0.8982          
+    ##                  95% CI : (0.8884, 0.9074)
+    ##     No Information Rate : 0.8495          
+    ##     P-Value [Acc > NIR] : < 2.2e-16       
+    ##                                           
+    ##                   Kappa : 0.5151          
+    ##                                           
+    ##  Mcnemar's Test P-Value : < 2.2e-16       
+    ##                                           
+    ##             Sensitivity : 0.44444         
+    ##             Specificity : 0.97855         
+    ##          Pos Pred Value : 0.78592         
+    ##          Neg Pred Value : 0.90859         
+    ##              Prevalence : 0.15052         
+    ##          Detection Rate : 0.06690         
+    ##    Detection Prevalence : 0.08512         
+    ##       Balanced Accuracy : 0.71150         
+    ##                                           
+    ##        'Positive' Class : 0               
+    ## 
+
+``` r
+# ROC curve and AUC
+roc_curve <- roc(bc_data$status, predicted)
+```
+
+    ## Setting levels: control = 0, case = 1
+
+    ## Setting direction: controls < cases
+
+``` r
+plot(roc_curve)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+
+Use train-test split on logistic regression model to validate the model:
+
+## Additional: Compare performance for White vs Black groups
 
 And can you improve the prediction performance gap btw these two groups
 for your model?

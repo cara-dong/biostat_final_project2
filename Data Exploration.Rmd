@@ -166,21 +166,35 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ## Model and MLR selections
 ### MLR with all predictors
 ```{r}
-mult.fit = 
-  lm(survival_months ~ ., data = bc_data)
+mult.fit = lm(survival_months ~ ., data = bc_data)
 
-logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
-summary(logit_fit)
+#logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
+#summary(logit_fit)
 
 
 summary(mult.fit)
 
 # QQ plot showing datafit 
-plot(mult.fit, which = 2)
+plot(mult.fit)
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
 Looks like doesn't need a transformation on the outcome survival months.
+
+Use box-cox transformation to double-check if we need to make transformations.
+```{r message=FALSE, warning=FALSE}
+# boxcox(mult.fit)
+```
+
+Since lambda approaches 1 and its 95% CI lies close to 1, it suggests that we do not need to make any transformation.
+
+Based on Cook's distance, we will investigate the three influential points:
+```{r}
+view_influential = bc_data[c(278, 1553, 1584), ]
+view_influential
+```
+
+After investigation, it looks like these three points are not negatively impacting the results. So, we will not remove them. They have a reason to be there.
 
 ### MLR reducing multicollinearity using correlation matrix
 First, find the highly correlated pairs:
@@ -233,10 +247,15 @@ reduced_model = lm(survival_months ~ ., data = reduced_df)
 
 summary(reduced_model) 
 # |> broom::tidy() |> knitr::kable(digits=3)
+```
 
+Estrogen_status1 seems to be the most influential factor .
+
+```{r}
 plot(reduced_model)
 ```
 
+Normality fit looks better at the left tail.
 
 ### Stepwise, Backward
 ```{r}
@@ -342,17 +361,48 @@ print(cv_results)
 ```
 The RMSE and R-squared appear similar.
 
-```{r}
-mlr_cv_summary <- summary(mult.fit)
-adjusted_r_squared_mlr <- mlr_summary$adj.r.squared
-adjusted_r_squared_mlr
-```
-The crude, all-in-one MLR performs better than linear regression with LASSO regularization in terms of adjusted R-squared.
 
 ### Test MLR with reduced multicollinearity
 ```{r}
+# Fit the MLR model on the training data
+reduced_train = train_data |> select(-t_stage, n_stage, x6th_stage)
+reduced_test = test_data |> select(-t_stage, n_stage, x6th_stage)
+  
+reduced_fit <- lm(survival_months ~ ., data = reduced_train)
 
+# Predict on the test data
+predicted_test <- predict(reduced_fit, newdata = reduced_test)
+
+# Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
+rmse <- sqrt(mean((predicted_test - reduced_test$survival_months)^2))
+rsquared <- summary(reduced_fit)$r.squared
+
+rsquared
 ```
+
+```{r}
+mlr_summary_reduced <- summary(reduced_model)
+adjusted_r_squared_mlr_reduced <- mlr_summary_reduced$adj.r.squared
+adjusted_r_squared_mlr_reduced
+```
+
+We will also cross-validate MLR to double-check:
+```{r}
+# Define the number of folds for cross-validation
+num_folds <- 5  # You can adjust the number of folds as needed
+
+# Define the control parameters for cross-validation
+ctrl <- trainControl(method = "cv", number = num_folds)
+
+# Train the MLR model with k-fold cross-validation
+reduced_fit_cv <- train(survival_months ~ ., data = reduced_df, method = "lm", trControl = ctrl)
+
+# Get cross-validated performance metrics
+cv_results_reduced <- reduced_fit_cv$results
+print(cv_results_reduced)
+```
+
+The RMSE and R-squared appear similar to that before cross-validation.
 
 ### Test Stepwise Regression Model
 ```{r}
@@ -437,9 +487,46 @@ adjusted_r_squared_lasso
 ## The model we selected...
 
 xxxx
-The reasons behind:
+The reasons behind: The crude, all-in-one MLR performs better than linear regression with LASSO regularization in terms of adjusted R-squared. all-predictor one compared with the reduced-predictor one?
 
-## Compare performance for White vs Black groups
+## Additional: Logistic Regression
+```{r}
+# Fit logistic regression model
+logistic_model <- glm(status ~ ., data = bc_data, family = "binomial")
+
+# Summary of the logistic regression model
+summary(logistic_model)
+
+# Predict on the training set
+predicted <- predict(logistic_model, type = "response")
+
+# Display the predicted values
+head(predicted)
+```
+
+Evaluate model performance on training set:
+```{r}
+library(caret)
+library(pROC)
+
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(as.factor(round(predicted)), as.factor(bc_data$status))
+
+# Print the confusion matrix
+print(conf_matrix)
+
+# ROC curve and AUC
+roc_curve <- roc(bc_data$status, predicted)
+plot(roc_curve)
+```
+
+Use train-test split on logistic regression model to validate the model:
+```{r}
+
+```
+
+
+## Additional: Compare performance for White vs Black groups
 And can you improve the prediction performance gap btw these two groups for your model?
 ```{r}
 
