@@ -226,11 +226,12 @@ Since lambda approaches 1 and its 95% CI lies close to 1, it suggests that we do
 
 Based on Cook's distance, we will investigate the three influential points:
 ```{r}
-view_influential = bc_data[c(278, 1553, 1584), ]
+view_influential = bc_data_dummy[c(1843, 1553, 1534), ]
 view_influential
 ```
 
 After investigation, it looks like these three points are not negatively impacting the results. So, we will not remove them. They have a reason to be there.
+
 
 ### MLR reducing multicollinearity using correlation matrix
 First, find the highly correlated pairs:
@@ -335,7 +336,6 @@ both_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_fa
 summary(both_pred)
 ```
 
-
 ### LASSO
 ```{r}
 # supply sequence of lambda values for the lasso cross validation for lambda
@@ -356,7 +356,7 @@ cv_lasso_fit <- glmnet::cv.glmnet(x = mat,
                                     nfolds = 10)
 cv_lasso_fit
 ```
-min lambda is 0.25
+min lambda is 0.19.
 
 ```{r}
 lasso_fit = glmnet::glmnet(x = mat,
@@ -368,6 +368,8 @@ coef(lasso_fit)
 Fit LASSO:
 ```{r}
 pred_lasso = lm(survival_months ~ age+race_as_factor_bc_data_var_1+race_as_factor_bc_data_var_3+marital_status_as_factor_bc_data_var_2+marital_status_as_factor_bc_data_var_3+t_stage_as_factor_bc_data_var_1+t_stage_as_factor_bc_data_var_2+n_stage_as_factor_bc_data_var_1+n_stage_as_factor_bc_data_var_3+x6th_stage_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_2+grade_as_factor_bc_data_var_2+a_stage_as_factor_bc_data_var_1+a_stage_as_factor_bc_data_var_2+tumor_size+estrogen_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_1+status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1, data = bc_data_dummy)
+
+# +status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1
 
 summary(pred_lasso)
 ```
@@ -479,8 +481,11 @@ print(conf_matrix)
 ```{r}
 # ROC curve and AUC
 roc_curve <- roc(bc_data$status, predicted)
-plot(roc_curve)
+
+# Plot ROC curve with x-axis as 1 - Specificity
+plot(roc_curve, legacy.axes = TRUE, print.auc = TRUE, col = "pink", main = "ROC Curve for All Data")
 ```
+
 This is a very good classification!
 
 Use train-test split on logistic regression model to validate the model:
@@ -512,10 +517,18 @@ test_predictions <- predict(logistic_validate, newdata = test_data, type = "resp
 
 ```{r}
 # Create the confusion matrix
-conf_matrix <- confusionMatrix(as.factor(round(test_predictions)), as.factor(test_data$status))
+conf_matrix_test <- confusionMatrix(as.factor(round(test_predictions)),
+                                    as.factor(test_data$status))
 
 # Print the confusion matrix
-print(conf_matrix)
+print(conf_matrix_test)
+```
+
+```{r}
+# ROC curve and AUC
+roc_curve_test <- roc(test_data$status, test_predictions)
+# Plot ROC curve with x-axis as 1 - Specificity
+plot(roc_curve_test, legacy.axes = TRUE, print.auc = TRUE, col = "darkgreen", main = "ROC Curve for Test Data")
 ```
 
 

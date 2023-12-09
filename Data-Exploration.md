@@ -621,22 +621,102 @@ Based on Cook’s distance, we will investigate the three influential
 points:
 
 ``` r
-view_influential = bc_data[c(278, 1553, 1584), ]
+view_influential = bc_data_dummy[c(1843, 1553, 1534), ]
 view_influential
 ```
 
-    ##      age race marital_status t_stage n_stage x6th_stage differentiate grade
-    ## 278   52    1              4       3       3          5             3     4
-    ## 1553  58    2              4       1       2          3             3     4
-    ## 1584  50    2              2       2       1          2             1     2
-    ##      a_stage tumor_size estrogen_status progesterone_status
-    ## 278        2        100               1                   1
-    ## 1553       2         19               0                   0
-    ## 1584       2         25               1                   1
-    ##      regional_node_examined regional_node_positive survival_months status
-    ## 278                      23                     17              16      0
-    ## 1553                     47                      7               9      0
-    ## 1584                     39                      3              71      1
+    ##      age tumor_size regional_node_examined regional_node_positive
+    ## 1843  46         25                      4                      1
+    ## 1553  58         19                     47                      7
+    ## 1534  69         28                     14                     13
+    ##      survival_months race_as_factor_bc_data_var_1 race_as_factor_bc_data_var_2
+    ## 1843             100                            0                            1
+    ## 1553               9                            0                            1
+    ## 1534              13                            0                            1
+    ##      race_as_factor_bc_data_var_3 marital_status_as_factor_bc_data_var_1
+    ## 1843                            0                                      0
+    ## 1553                            0                                      0
+    ## 1534                            0                                      0
+    ##      marital_status_as_factor_bc_data_var_2
+    ## 1843                                      0
+    ## 1553                                      0
+    ## 1534                                      0
+    ##      marital_status_as_factor_bc_data_var_3
+    ## 1843                                      1
+    ## 1553                                      0
+    ## 1534                                      0
+    ##      marital_status_as_factor_bc_data_var_4
+    ## 1843                                      0
+    ## 1553                                      1
+    ## 1534                                      0
+    ##      marital_status_as_factor_bc_data_var_5 t_stage_as_factor_bc_data_var_1
+    ## 1843                                      0                               0
+    ## 1553                                      0                               1
+    ## 1534                                      1                               0
+    ##      t_stage_as_factor_bc_data_var_2 t_stage_as_factor_bc_data_var_3
+    ## 1843                               1                               0
+    ## 1553                               0                               0
+    ## 1534                               1                               0
+    ##      t_stage_as_factor_bc_data_var_4 n_stage_as_factor_bc_data_var_1
+    ## 1843                               0                               1
+    ## 1553                               0                               0
+    ## 1534                               0                               0
+    ##      n_stage_as_factor_bc_data_var_2 n_stage_as_factor_bc_data_var_3
+    ## 1843                               0                               0
+    ## 1553                               1                               0
+    ## 1534                               0                               1
+    ##      x6th_stage_as_factor_bc_data_var_1 x6th_stage_as_factor_bc_data_var_2
+    ## 1843                                  0                                  1
+    ## 1553                                  0                                  0
+    ## 1534                                  0                                  0
+    ##      x6th_stage_as_factor_bc_data_var_3 x6th_stage_as_factor_bc_data_var_4
+    ## 1843                                  0                                  0
+    ## 1553                                  1                                  0
+    ## 1534                                  0                                  0
+    ##      x6th_stage_as_factor_bc_data_var_5 differentiate_as_factor_bc_data_var_1
+    ## 1843                                  0                                     0
+    ## 1553                                  0                                     0
+    ## 1534                                  1                                     0
+    ##      differentiate_as_factor_bc_data_var_2
+    ## 1843                                     1
+    ## 1553                                     0
+    ## 1534                                     0
+    ##      differentiate_as_factor_bc_data_var_3
+    ## 1843                                     0
+    ## 1553                                     1
+    ## 1534                                     1
+    ##      differentiate_as_factor_bc_data_var_4 grade_as_factor_bc_data_var_1
+    ## 1843                                     0                             0
+    ## 1553                                     0                             0
+    ## 1534                                     0                             0
+    ##      grade_as_factor_bc_data_var_2 grade_as_factor_bc_data_var_3
+    ## 1843                             0                             1
+    ## 1553                             0                             0
+    ## 1534                             0                             0
+    ##      grade_as_factor_bc_data_var_4 a_stage_as_factor_bc_data_var_1
+    ## 1843                             0                               0
+    ## 1553                             1                               0
+    ## 1534                             1                               0
+    ##      a_stage_as_factor_bc_data_var_2 estrogen_status_as_factor_bc_data_var_0
+    ## 1843                               1                                       0
+    ## 1553                               1                                       1
+    ## 1534                               1                                       0
+    ##      estrogen_status_as_factor_bc_data_var_1
+    ## 1843                                       1
+    ## 1553                                       0
+    ## 1534                                       1
+    ##      progesterone_status_as_factor_bc_data_var_0
+    ## 1843                                           1
+    ## 1553                                           1
+    ## 1534                                           0
+    ##      progesterone_status_as_factor_bc_data_var_1 status_as_factor_bc_data_var_0
+    ## 1843                                           0                              1
+    ## 1553                                           0                              1
+    ## 1534                                           1                              1
+    ##      status_as_factor_bc_data_var_1
+    ## 1843                              0
+    ## 1553                              0
+    ## 1534                              0
 
 After investigation, it looks like these three points are not negatively
 impacting the results. So, we will not remove them. They have a reason
@@ -1097,7 +1177,7 @@ cv_lasso_fit
     ## min 0.2512     7   489.1 12.83      21
     ## 1se 1.0000     1   491.9 13.30      10
 
-min lambda is 0.25
+min lambda is 0.19.
 
 ``` r
 lasso_fit = glmnet::glmnet(x = mat,
@@ -1152,6 +1232,8 @@ Fit LASSO:
 
 ``` r
 pred_lasso = lm(survival_months ~ age+race_as_factor_bc_data_var_1+race_as_factor_bc_data_var_3+marital_status_as_factor_bc_data_var_2+marital_status_as_factor_bc_data_var_3+t_stage_as_factor_bc_data_var_1+t_stage_as_factor_bc_data_var_2+n_stage_as_factor_bc_data_var_1+n_stage_as_factor_bc_data_var_3+x6th_stage_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_2+grade_as_factor_bc_data_var_2+a_stage_as_factor_bc_data_var_1+a_stage_as_factor_bc_data_var_2+tumor_size+estrogen_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_1+status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1, data = bc_data_dummy)
+
+# +status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1
 
 summary(pred_lasso)
 ```
