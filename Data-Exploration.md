@@ -113,6 +113,17 @@ outliers <- bc_data |> filter((survival_months < lower_bound) | (survival_months
 bc_data <- anti_join(bc_data, outliers, by = c(colnames(bc_data)))
 ```
 
+``` r
+colnames(bc_data)
+```
+
+    ##  [1] "age"                    "race"                   "marital_status"        
+    ##  [4] "t_stage"                "n_stage"                "x6th_stage"            
+    ##  [7] "differentiate"          "grade"                  "a_stage"               
+    ## [10] "tumor_size"             "estrogen_status"        "progesterone_status"   
+    ## [13] "regional_node_examined" "reginol_node_positive"  "survival_months"       
+    ## [16] "status"
+
 ### Survial Months distribution
 
 ``` r
@@ -121,7 +132,7 @@ bc_data <- anti_join(bc_data, outliers, by = c(colnames(bc_data)))
 hist(bc_data$survival_months, main = "Distribution of survival months", xlab = "Survival Month")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ``` r
 #try different transformation 
@@ -129,28 +140,28 @@ log_survival = log(bc_data$survival_months)
 hist(log_survival, main = "Distribution of log_transformed survival months", xlab = "log-transformed survival months")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
 
 ``` r
 sqrt_survival = sqrt(bc_data$survival_months)
 hist(sqrt_survival, main = "Distribution of sqrt(survival months)", xlab = "sqrt(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-3.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-3.png)<!-- -->
 
 ``` r
 sq_survival = (bc_data$survival_months^2)
 hist(sq_survival, main = "Distribution of square(survival months)", xlab = "square(survival months)")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-4.png)<!-- -->
 
 ``` r
 iv_survival = (1/bc_data$survival_months)
 hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-5-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
 
 ### Convert categorical data to factor
 
@@ -182,7 +193,7 @@ bc_data |>
   pairs()
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 cor_matrix <- 
@@ -259,7 +270,7 @@ print(cor_matrix, digits = 3)
 corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-7-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
 
 ``` r
 # boxplots for each variable
@@ -273,7 +284,7 @@ boxplot(bc_data$t_stage, main = "t_stage")
 boxplot(bc_data$n_stage, main = "n_stage")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(2,4))
@@ -287,7 +298,7 @@ boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
 boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
 
 ## Model and MLR selections
 
@@ -477,7 +488,6 @@ mult.fit = lm(survival_months ~ ., data = bc_data_dummy)
 #logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
 #summary(logit_fit)
 
-
 summary(mult.fit)
 ```
 
@@ -582,18 +592,19 @@ summary(mult.fit)
     ## F-statistic: 46.57 on 25 and 3980 DF,  p-value: < 2.2e-16
 
 ``` r
-# QQ plot showing datafit 
-plot(mult.fit)
-```
-
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-4.png)<!-- -->
-
-``` r
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+par(mfrow = c(2,2))
+plot(mult.fit)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+
 Looks like doesn’t need a transformation on the outcome survival months.
 
 Use box-cox transformation to double-check if we need to make
@@ -790,7 +801,7 @@ Estrogen_status1 seems to be the most influential factor .
 plot(reduced_model)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-4.png)<!-- -->
 
 Normality fit looks better at the left tail.
 
@@ -1229,14 +1240,14 @@ par(mfrow = c(2,2))
 plot(forward_pred)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(2,2))
 plot(both_pred)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 Still choose forward selection one, because less predictors used is
 better based on principle of parsimony.
@@ -1444,7 +1455,7 @@ roc_curve <- roc(bc_data$status, predicted)
 plot(roc_curve)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 This is a very good classification!
 
 Use train-test split on logistic regression model to validate the model:

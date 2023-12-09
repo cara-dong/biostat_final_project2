@@ -80,6 +80,10 @@ outliers <- bc_data |> filter((survival_months < lower_bound) | (survival_months
 bc_data <- anti_join(bc_data, outliers, by = c(colnames(bc_data)))
 ```
 
+```{r}
+colnames(bc_data)
+```
+
 
 ### Survial Months distribution 
 ```{r}
@@ -201,14 +205,16 @@ mult.fit = lm(survival_months ~ ., data = bc_data_dummy)
 #logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
 #summary(logit_fit)
 
-
 summary(mult.fit)
-
-# QQ plot showing datafit 
-plot(mult.fit)
+```
+```{r}
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
+
+par(mfrow = c(2,2))
+plot(mult.fit)
 ```
+
 Looks like doesn't need a transformation on the outcome survival months.
 
 Use box-cox transformation to double-check if we need to make transformations.
