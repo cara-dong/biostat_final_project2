@@ -293,8 +293,186 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 
 ### MLR with all predictors
 
+Create dummies:
+
 ``` r
-mult.fit = lm(survival_months ~ ., data = bc_data)
+# Create a copy of the original data (optional step)
+bc_data_dummy <- bc_data
+
+# Specify the names of factor variables
+factor_vars <- c("race", "marital_status", "t_stage", "n_stage", "x6th_stage", 
+                 "differentiate", "grade", "a_stage", "estrogen_status", 
+                 "progesterone_status", "status")
+
+# Loop through each factor variable and create dummy variables
+for (var in factor_vars) {
+  # Convert the factor variable into dummy variables
+  dummy_cols <- model.matrix(~ 0 + as.factor(bc_data[[var]]))
+  
+  # Modify column names to remove unwanted parts
+  colnames(dummy_cols) <- gsub(paste0(var, "_bc_data\\[\\[", var, "\\]\\]"), "", colnames(dummy_cols))
+  
+  # Assign dummy variables to the dataframe
+  colnames(dummy_cols) <- paste(var, colnames(dummy_cols), sep = "_")
+  bc_data_dummy <- cbind(bc_data_dummy, dummy_cols)
+}
+
+# Remove original factor columns if desired
+bc_data_dummy <- bc_data_dummy[, !names(bc_data_dummy) %in% factor_vars] |> janitor::clean_names()
+
+head(bc_data_dummy)
+```
+
+    ##   age tumor_size regional_node_examined regional_node_positive survival_months
+    ## 1  68          4                     24                      1              60
+    ## 2  50         35                     14                      5              62
+    ## 3  58         63                     14                      7              75
+    ## 4  58         18                      2                      1              84
+    ## 5  47         41                      3                      1              50
+    ## 6  51         20                     18                      2              89
+    ##   race_as_factor_bc_data_var_1 race_as_factor_bc_data_var_2
+    ## 1                            0                            1
+    ## 2                            0                            1
+    ## 3                            0                            1
+    ## 4                            0                            1
+    ## 5                            0                            1
+    ## 6                            0                            1
+    ##   race_as_factor_bc_data_var_3 marital_status_as_factor_bc_data_var_1
+    ## 1                            0                                      0
+    ## 2                            0                                      0
+    ## 3                            0                                      1
+    ## 4                            0                                      0
+    ## 5                            0                                      0
+    ## 6                            0                                      0
+    ##   marital_status_as_factor_bc_data_var_2 marital_status_as_factor_bc_data_var_3
+    ## 1                                      1                                      0
+    ## 2                                      1                                      0
+    ## 3                                      0                                      0
+    ## 4                                      1                                      0
+    ## 5                                      1                                      0
+    ## 6                                      0                                      0
+    ##   marital_status_as_factor_bc_data_var_4 marital_status_as_factor_bc_data_var_5
+    ## 1                                      0                                      0
+    ## 2                                      0                                      0
+    ## 3                                      0                                      0
+    ## 4                                      0                                      0
+    ## 5                                      0                                      0
+    ## 6                                      1                                      0
+    ##   t_stage_as_factor_bc_data_var_1 t_stage_as_factor_bc_data_var_2
+    ## 1                               1                               0
+    ## 2                               0                               1
+    ## 3                               0                               0
+    ## 4                               1                               0
+    ## 5                               0                               1
+    ## 6                               1                               0
+    ##   t_stage_as_factor_bc_data_var_3 t_stage_as_factor_bc_data_var_4
+    ## 1                               0                               0
+    ## 2                               0                               0
+    ## 3                               1                               0
+    ## 4                               0                               0
+    ## 5                               0                               0
+    ## 6                               0                               0
+    ##   n_stage_as_factor_bc_data_var_1 n_stage_as_factor_bc_data_var_2
+    ## 1                               1                               0
+    ## 2                               0                               1
+    ## 3                               0                               0
+    ## 4                               1                               0
+    ## 5                               1                               0
+    ## 6                               1                               0
+    ##   n_stage_as_factor_bc_data_var_3 x6th_stage_as_factor_bc_data_var_1
+    ## 1                               0                                  1
+    ## 2                               0                                  0
+    ## 3                               1                                  0
+    ## 4                               0                                  1
+    ## 5                               0                                  0
+    ## 6                               0                                  1
+    ##   x6th_stage_as_factor_bc_data_var_2 x6th_stage_as_factor_bc_data_var_3
+    ## 1                                  0                                  0
+    ## 2                                  0                                  1
+    ## 3                                  0                                  0
+    ## 4                                  0                                  0
+    ## 5                                  1                                  0
+    ## 6                                  0                                  0
+    ##   x6th_stage_as_factor_bc_data_var_4 x6th_stage_as_factor_bc_data_var_5
+    ## 1                                  0                                  0
+    ## 2                                  0                                  0
+    ## 3                                  0                                  1
+    ## 4                                  0                                  0
+    ## 5                                  0                                  0
+    ## 6                                  0                                  0
+    ##   differentiate_as_factor_bc_data_var_1 differentiate_as_factor_bc_data_var_2
+    ## 1                                     0                                     1
+    ## 2                                     1                                     0
+    ## 3                                     1                                     0
+    ## 4                                     0                                     1
+    ## 5                                     0                                     1
+    ## 6                                     1                                     0
+    ##   differentiate_as_factor_bc_data_var_3 differentiate_as_factor_bc_data_var_4
+    ## 1                                     0                                     0
+    ## 2                                     0                                     0
+    ## 3                                     0                                     0
+    ## 4                                     0                                     0
+    ## 5                                     0                                     0
+    ## 6                                     0                                     0
+    ##   grade_as_factor_bc_data_var_1 grade_as_factor_bc_data_var_2
+    ## 1                             0                             0
+    ## 2                             0                             1
+    ## 3                             0                             1
+    ## 4                             0                             0
+    ## 5                             0                             0
+    ## 6                             0                             1
+    ##   grade_as_factor_bc_data_var_3 grade_as_factor_bc_data_var_4
+    ## 1                             1                             0
+    ## 2                             0                             0
+    ## 3                             0                             0
+    ## 4                             1                             0
+    ## 5                             1                             0
+    ## 6                             0                             0
+    ##   a_stage_as_factor_bc_data_var_1 a_stage_as_factor_bc_data_var_2
+    ## 1                               0                               1
+    ## 2                               0                               1
+    ## 3                               0                               1
+    ## 4                               0                               1
+    ## 5                               0                               1
+    ## 6                               0                               1
+    ##   estrogen_status_as_factor_bc_data_var_0
+    ## 1                                       0
+    ## 2                                       0
+    ## 3                                       0
+    ## 4                                       0
+    ## 5                                       0
+    ## 6                                       0
+    ##   estrogen_status_as_factor_bc_data_var_1
+    ## 1                                       1
+    ## 2                                       1
+    ## 3                                       1
+    ## 4                                       1
+    ## 5                                       1
+    ## 6                                       1
+    ##   progesterone_status_as_factor_bc_data_var_0
+    ## 1                                           0
+    ## 2                                           0
+    ## 3                                           0
+    ## 4                                           0
+    ## 5                                           0
+    ## 6                                           0
+    ##   progesterone_status_as_factor_bc_data_var_1 status_as_factor_bc_data_var_0
+    ## 1                                           1                              0
+    ## 2                                           1                              0
+    ## 3                                           1                              0
+    ## 4                                           1                              0
+    ## 5                                           1                              0
+    ## 6                                           1                              0
+    ##   status_as_factor_bc_data_var_1
+    ## 1                              1
+    ## 2                              1
+    ## 3                              1
+    ## 4                              1
+    ## 5                              1
+    ## 6                              1
+
+``` r
+mult.fit = lm(survival_months ~ ., data = bc_data_dummy)
 
 #logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
 #summary(logit_fit)
@@ -305,44 +483,97 @@ summary(mult.fit)
 
     ## 
     ## Call:
-    ## lm(formula = survival_months ~ ., data = bc_data)
+    ## lm(formula = survival_months ~ ., data = bc_data_dummy)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
     ## -69.992 -15.128   0.098  16.032  56.613 
     ## 
-    ## Coefficients: (4 not defined because of singularities)
-    ##                         Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)            36.694762   3.772729   9.726  < 2e-16 ***
-    ## age                     0.040374   0.036737   1.099  0.27183    
-    ## race2                   1.558393   1.244934   1.252  0.21072    
-    ## race3                   2.546319   1.643544   1.549  0.12139    
-    ## marital_status2        -0.059298   0.989508  -0.060  0.95222    
-    ## marital_status3        -2.045810   3.148163  -0.650  0.51583    
-    ## marital_status4        -0.408614   1.221966  -0.334  0.73810    
-    ## marital_status5        -0.548340   1.604840  -0.342  0.73261    
-    ## t_stage2                0.099916   1.499238   0.067  0.94687    
-    ## t_stage3                3.199188   2.449076   1.306  0.19153    
-    ## t_stage4                3.717544   3.969937   0.936  0.34911    
-    ## n_stage2                1.871147   1.761577   1.062  0.28821    
-    ## n_stage3               -1.242517   2.369855  -0.524  0.60010    
-    ## x6th_stage2            -0.196884   1.617799  -0.122  0.90314    
-    ## x6th_stage3            -2.418634   2.092261  -1.156  0.24775    
-    ## x6th_stage4             0.788278   4.564133   0.173  0.86289    
-    ## x6th_stage5                   NA         NA      NA       NA    
-    ## differentiate2          0.285396   0.756143   0.377  0.70587    
-    ## differentiate3          3.396099   4.618440   0.735  0.46218    
-    ## differentiate4         -1.491896   0.954990  -1.562  0.11832    
-    ## grade2                        NA         NA      NA       NA    
-    ## grade3                        NA         NA      NA       NA    
-    ## grade4                        NA         NA      NA       NA    
-    ## a_stage2                4.570519   2.363160   1.934  0.05318 .  
-    ## tumor_size             -0.051989   0.030404  -1.710  0.08735 .  
-    ## estrogen_status1        4.774359   1.498117   3.187  0.00145 ** 
-    ## progesterone_status1   -0.647275   0.979282  -0.661  0.50867    
-    ## regional_node_examined -0.001346   0.042900  -0.031  0.97497    
-    ## regional_node_positive  0.022143   0.126845   0.175  0.86143    
-    ## status1                28.806548   0.945322  30.473  < 2e-16 ***
+    ## Coefficients: (15 not defined because of singularities)
+    ##                                               Estimate Std. Error t value
+    ## (Intercept)                                  77.180024   5.292491  14.583
+    ## age                                           0.040374   0.036737   1.099
+    ## tumor_size                                   -0.051989   0.030404  -1.710
+    ## regional_node_examined                       -0.001346   0.042900  -0.031
+    ## regional_node_positive                        0.022143   0.126845   0.175
+    ## race_as_factor_bc_data_var_1                 -2.546319   1.643544  -1.549
+    ## race_as_factor_bc_data_var_2                 -0.987926   1.173270  -0.842
+    ## race_as_factor_bc_data_var_3                        NA         NA      NA
+    ## marital_status_as_factor_bc_data_var_1        0.548340   1.604840   0.342
+    ## marital_status_as_factor_bc_data_var_2        0.489042   1.393440   0.351
+    ## marital_status_as_factor_bc_data_var_3       -1.497469   3.300200  -0.454
+    ## marital_status_as_factor_bc_data_var_4        0.139726   1.573657   0.089
+    ## marital_status_as_factor_bc_data_var_5              NA         NA      NA
+    ## t_stage_as_factor_bc_data_var_1              -3.717544   3.969937  -0.936
+    ## t_stage_as_factor_bc_data_var_2              -3.617628   3.701685  -0.977
+    ## t_stage_as_factor_bc_data_var_3              -0.518356   3.724496  -0.139
+    ## t_stage_as_factor_bc_data_var_4                     NA         NA      NA
+    ## n_stage_as_factor_bc_data_var_1               2.030794   4.516244   0.450
+    ## n_stage_as_factor_bc_data_var_2               3.901942   4.400173   0.887
+    ## n_stage_as_factor_bc_data_var_3                     NA         NA      NA
+    ## x6th_stage_as_factor_bc_data_var_1           -0.788278   4.564133  -0.173
+    ## x6th_stage_as_factor_bc_data_var_2           -0.985161   4.466927  -0.221
+    ## x6th_stage_as_factor_bc_data_var_3           -3.206911   4.354306  -0.736
+    ## x6th_stage_as_factor_bc_data_var_4                  NA         NA      NA
+    ## x6th_stage_as_factor_bc_data_var_5                  NA         NA      NA
+    ## differentiate_as_factor_bc_data_var_1         1.491896   0.954990   1.562
+    ## differentiate_as_factor_bc_data_var_2         1.777293   1.086156   1.636
+    ## differentiate_as_factor_bc_data_var_3         4.887995   4.684956   1.043
+    ## differentiate_as_factor_bc_data_var_4               NA         NA      NA
+    ## grade_as_factor_bc_data_var_1                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_2                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_3                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_4                       NA         NA      NA
+    ## a_stage_as_factor_bc_data_var_1              -4.570519   2.363160  -1.934
+    ## a_stage_as_factor_bc_data_var_2                     NA         NA      NA
+    ## estrogen_status_as_factor_bc_data_var_0      -4.774359   1.498117  -3.187
+    ## estrogen_status_as_factor_bc_data_var_1             NA         NA      NA
+    ## progesterone_status_as_factor_bc_data_var_0   0.647275   0.979282   0.661
+    ## progesterone_status_as_factor_bc_data_var_1         NA         NA      NA
+    ## status_as_factor_bc_data_var_0              -28.806548   0.945322 -30.473
+    ## status_as_factor_bc_data_var_1                      NA         NA      NA
+    ##                                             Pr(>|t|)    
+    ## (Intercept)                                  < 2e-16 ***
+    ## age                                          0.27183    
+    ## tumor_size                                   0.08735 .  
+    ## regional_node_examined                       0.97497    
+    ## regional_node_positive                       0.86143    
+    ## race_as_factor_bc_data_var_1                 0.12139    
+    ## race_as_factor_bc_data_var_2                 0.39982    
+    ## race_as_factor_bc_data_var_3                      NA    
+    ## marital_status_as_factor_bc_data_var_1       0.73261    
+    ## marital_status_as_factor_bc_data_var_2       0.72564    
+    ## marital_status_as_factor_bc_data_var_3       0.65003    
+    ## marital_status_as_factor_bc_data_var_4       0.92925    
+    ## marital_status_as_factor_bc_data_var_5            NA    
+    ## t_stage_as_factor_bc_data_var_1              0.34911    
+    ## t_stage_as_factor_bc_data_var_2              0.32848    
+    ## t_stage_as_factor_bc_data_var_3              0.88932    
+    ## t_stage_as_factor_bc_data_var_4                   NA    
+    ## n_stage_as_factor_bc_data_var_1              0.65298    
+    ## n_stage_as_factor_bc_data_var_2              0.37526    
+    ## n_stage_as_factor_bc_data_var_3                   NA    
+    ## x6th_stage_as_factor_bc_data_var_1           0.86289    
+    ## x6th_stage_as_factor_bc_data_var_2           0.82546    
+    ## x6th_stage_as_factor_bc_data_var_3           0.46147    
+    ## x6th_stage_as_factor_bc_data_var_4                NA    
+    ## x6th_stage_as_factor_bc_data_var_5                NA    
+    ## differentiate_as_factor_bc_data_var_1        0.11832    
+    ## differentiate_as_factor_bc_data_var_2        0.10185    
+    ## differentiate_as_factor_bc_data_var_3        0.29685    
+    ## differentiate_as_factor_bc_data_var_4             NA    
+    ## grade_as_factor_bc_data_var_1                     NA    
+    ## grade_as_factor_bc_data_var_2                     NA    
+    ## grade_as_factor_bc_data_var_3                     NA    
+    ## grade_as_factor_bc_data_var_4                     NA    
+    ## a_stage_as_factor_bc_data_var_1              0.05318 .  
+    ## a_stage_as_factor_bc_data_var_2                   NA    
+    ## estrogen_status_as_factor_bc_data_var_0      0.00145 ** 
+    ## estrogen_status_as_factor_bc_data_var_1           NA    
+    ## progesterone_status_as_factor_bc_data_var_0  0.50867    
+    ## progesterone_status_as_factor_bc_data_var_1       NA    
+    ## status_as_factor_bc_data_var_0               < 2e-16 ***
+    ## status_as_factor_bc_data_var_1                    NA    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
@@ -355,14 +586,14 @@ summary(mult.fit)
 plot(mult.fit)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-4.png)<!-- -->
 
 ``` r
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-5.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-5.png)<!-- -->
 Looks like doesn’t need a transformation on the outcome survival months.
 
 Use box-cox transformation to double-check if we need to make
@@ -464,7 +695,7 @@ Keep tumor_size, delete the other two.
 Fit the reduced model:
 
 ``` r
-reduced_df = bc_data |> select(-t_stage, -n_stage, -x6th_stage)
+reduced_df = bc_data_dummy |> select(-t_stage_as_factor_bc_data_var_1, -t_stage_as_factor_bc_data_var_2, -t_stage_as_factor_bc_data_var_3, -t_stage_as_factor_bc_data_var_4, -n_stage_as_factor_bc_data_var_1, -n_stage_as_factor_bc_data_var_2, -n_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_1, -x6th_stage_as_factor_bc_data_var_2, -x6th_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_4, -x6th_stage_as_factor_bc_data_var_5)
 ```
 
 ``` r
@@ -481,29 +712,67 @@ summary(reduced_model)
     ##     Min      1Q  Median      3Q     Max 
     ## -70.364 -15.117   0.119  16.073  55.601 
     ## 
-    ## Coefficients: (3 not defined because of singularities)
-    ##                         Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)            37.632367   3.630897  10.364  < 2e-16 ***
-    ## age                     0.039838   0.036678   1.086  0.27747    
-    ## race2                   1.562974   1.243413   1.257  0.20883    
-    ## race3                   2.445316   1.640892   1.490  0.13624    
-    ## marital_status2        -0.042962   0.988651  -0.043  0.96534    
-    ## marital_status3        -2.257402   3.143891  -0.718  0.47278    
-    ## marital_status4        -0.349243   1.219953  -0.286  0.77468    
-    ## marital_status5        -0.600815   1.603587  -0.375  0.70793    
-    ## differentiate2          0.217142   0.753276   0.288  0.77316    
-    ## differentiate3          3.558254   4.603453   0.773  0.43960    
-    ## differentiate4         -1.438294   0.952960  -1.509  0.13130    
-    ## grade2                        NA         NA      NA       NA    
-    ## grade3                        NA         NA      NA       NA    
-    ## grade4                        NA         NA      NA       NA    
-    ## a_stage2                3.186618   2.167131   1.470  0.14152    
-    ## tumor_size             -0.023423   0.015504  -1.511  0.13092    
-    ## estrogen_status1        4.670712   1.496363   3.121  0.00181 ** 
-    ## progesterone_status1   -0.575600   0.978345  -0.588  0.55634    
-    ## regional_node_examined -0.001638   0.042780  -0.038  0.96946    
-    ## regional_node_positive -0.021290   0.072907  -0.292  0.77029    
-    ## status1                28.714016   0.941956  30.483  < 2e-16 ***
+    ## Coefficients: (11 not defined because of singularities)
+    ##                                               Estimate Std. Error t value
+    ## (Intercept)                                  74.034319   2.979908  24.844
+    ## age                                           0.039838   0.036678   1.086
+    ## tumor_size                                   -0.023423   0.015504  -1.511
+    ## regional_node_examined                       -0.001638   0.042780  -0.038
+    ## regional_node_positive                       -0.021290   0.072907  -0.292
+    ## race_as_factor_bc_data_var_1                 -2.445316   1.640892  -1.490
+    ## race_as_factor_bc_data_var_2                 -0.882341   1.171560  -0.753
+    ## race_as_factor_bc_data_var_3                        NA         NA      NA
+    ## marital_status_as_factor_bc_data_var_1        0.600815   1.603587   0.375
+    ## marital_status_as_factor_bc_data_var_2        0.557853   1.392545   0.401
+    ## marital_status_as_factor_bc_data_var_3       -1.656587   3.295270  -0.503
+    ## marital_status_as_factor_bc_data_var_4        0.251571   1.571793   0.160
+    ## marital_status_as_factor_bc_data_var_5              NA         NA      NA
+    ## differentiate_as_factor_bc_data_var_1         1.438294   0.952960   1.509
+    ## differentiate_as_factor_bc_data_var_2         1.655436   1.080239   1.532
+    ## differentiate_as_factor_bc_data_var_3         4.996548   4.670001   1.070
+    ## differentiate_as_factor_bc_data_var_4               NA         NA      NA
+    ## grade_as_factor_bc_data_var_1                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_2                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_3                       NA         NA      NA
+    ## grade_as_factor_bc_data_var_4                       NA         NA      NA
+    ## a_stage_as_factor_bc_data_var_1              -3.186618   2.167131  -1.470
+    ## a_stage_as_factor_bc_data_var_2                     NA         NA      NA
+    ## estrogen_status_as_factor_bc_data_var_0      -4.670712   1.496363  -3.121
+    ## estrogen_status_as_factor_bc_data_var_1             NA         NA      NA
+    ## progesterone_status_as_factor_bc_data_var_0   0.575600   0.978345   0.588
+    ## progesterone_status_as_factor_bc_data_var_1         NA         NA      NA
+    ## status_as_factor_bc_data_var_0              -28.714016   0.941956 -30.483
+    ## status_as_factor_bc_data_var_1                      NA         NA      NA
+    ##                                             Pr(>|t|)    
+    ## (Intercept)                                  < 2e-16 ***
+    ## age                                          0.27747    
+    ## tumor_size                                   0.13092    
+    ## regional_node_examined                       0.96946    
+    ## regional_node_positive                       0.77029    
+    ## race_as_factor_bc_data_var_1                 0.13624    
+    ## race_as_factor_bc_data_var_2                 0.45141    
+    ## race_as_factor_bc_data_var_3                      NA    
+    ## marital_status_as_factor_bc_data_var_1       0.70793    
+    ## marital_status_as_factor_bc_data_var_2       0.68874    
+    ## marital_status_as_factor_bc_data_var_3       0.61519    
+    ## marital_status_as_factor_bc_data_var_4       0.87285    
+    ## marital_status_as_factor_bc_data_var_5            NA    
+    ## differentiate_as_factor_bc_data_var_1        0.13130    
+    ## differentiate_as_factor_bc_data_var_2        0.12549    
+    ## differentiate_as_factor_bc_data_var_3        0.28472    
+    ## differentiate_as_factor_bc_data_var_4             NA    
+    ## grade_as_factor_bc_data_var_1                     NA    
+    ## grade_as_factor_bc_data_var_2                     NA    
+    ## grade_as_factor_bc_data_var_3                     NA    
+    ## grade_as_factor_bc_data_var_4                     NA    
+    ## a_stage_as_factor_bc_data_var_1              0.14152    
+    ## a_stage_as_factor_bc_data_var_2                   NA    
+    ## estrogen_status_as_factor_bc_data_var_0      0.00181 ** 
+    ## estrogen_status_as_factor_bc_data_var_1           NA    
+    ## progesterone_status_as_factor_bc_data_var_0  0.55634    
+    ## progesterone_status_as_factor_bc_data_var_1       NA    
+    ## status_as_factor_bc_data_var_0               < 2e-16 ***
+    ## status_as_factor_bc_data_var_1                    NA    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
@@ -521,153 +790,432 @@ Estrogen_status1 seems to be the most influential factor .
 plot(reduced_model)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-18-4.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-3.png)<!-- -->![](Data-Exploration_files/figure-gfm/unnamed-chunk-19-4.png)<!-- -->
 
 Normality fit looks better at the left tail.
 
-### Stepwise, Backward
+### Stepwise
+
+Forward
 
 ``` r
-# backward regression 
-#step_backward = step(mult.fit, direction='backward')
-
-# Criteria based procedures. both direction: choose the model with the smallest AIC value
-step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
-  broom::tidy()
-
-knitr::kable(step_both, digits = 3)
+intercept_only = lm(survival_months ~ 1, data = bc_data_dummy)
+step(intercept_only, direction = "forward", scope = formula(mult.fit), trace = FALSE)
 ```
 
-| term             | estimate | std.error | statistic | p.value |
-|:-----------------|---------:|----------:|----------:|--------:|
-| (Intercept)      |   40.689 |     2.481 |    16.402 |   0.000 |
-| a_stage2         |    3.466 |     2.119 |     1.636 |   0.102 |
-| tumor_size       |   -0.023 |     0.015 |    -1.515 |   0.130 |
-| estrogen_status1 |    4.160 |     1.278 |     3.255 |   0.001 |
-| status1          |   28.657 |     0.903 |    31.744 |   0.000 |
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ status_as_factor_bc_data_var_1 + 
+    ##     estrogen_status_as_factor_bc_data_var_1 + a_stage_as_factor_bc_data_var_1 + 
+    ##     x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 + 
+    ##     race_as_factor_bc_data_var_1, data = bc_data_dummy)
+    ## 
+    ## Coefficients:
+    ##                             (Intercept)  
+    ##                                44.45422  
+    ##          status_as_factor_bc_data_var_1  
+    ##                                28.67674  
+    ## estrogen_status_as_factor_bc_data_var_1  
+    ##                                 4.28267  
+    ##         a_stage_as_factor_bc_data_var_1  
+    ##                                -4.56280  
+    ##      x6th_stage_as_factor_bc_data_var_4  
+    ##                                 4.75315  
+    ##                              tumor_size  
+    ##                                -0.02783  
+    ##   differentiate_as_factor_bc_data_var_4  
+    ##                                -1.50022  
+    ##            race_as_factor_bc_data_var_1  
+    ##                                -1.79008
+
+``` r
+#step_forward = MASS::stepAIC(mult.fit, direction = "forward", trace = FALSE) |>
+  #broom::tidy()
+
+#knitr::kable(step_forward, digits = 3)
+```
+
+``` r
+forward_pred = lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 +  race_as_factor_bc_data_var_1, 
+                  data = bc_data_dummy)
+
+summary(forward_pred)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ a_stage_as_factor_bc_data_var_1 + 
+    ##     estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + 
+    ##     x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 + 
+    ##     race_as_factor_bc_data_var_1, data = bc_data_dummy)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -71.245 -15.181   0.107  16.070  55.436 
+    ## 
+    ## Coefficients:
+    ##                                         Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                             44.45422    1.46660  30.311  < 2e-16
+    ## a_stage_as_factor_bc_data_var_1         -4.56280    2.20361  -2.071 0.038460
+    ## estrogen_status_as_factor_bc_data_var_1  4.28267    1.28133   3.342 0.000838
+    ## status_as_factor_bc_data_var_1          28.67674    0.90605  31.650  < 2e-16
+    ## x6th_stage_as_factor_bc_data_var_4       4.75315    2.57413   1.847 0.064892
+    ## tumor_size                              -0.02783    0.01520  -1.831 0.067164
+    ## differentiate_as_factor_bc_data_var_4   -1.50022    0.92326  -1.625 0.104262
+    ## race_as_factor_bc_data_var_1            -1.79008    1.21589  -1.472 0.141035
+    ##                                            
+    ## (Intercept)                             ***
+    ## a_stage_as_factor_bc_data_var_1         *  
+    ## estrogen_status_as_factor_bc_data_var_1 ***
+    ## status_as_factor_bc_data_var_1          ***
+    ## x6th_stage_as_factor_bc_data_var_4      .  
+    ## tumor_size                              .  
+    ## differentiate_as_factor_bc_data_var_4      
+    ## race_as_factor_bc_data_var_1               
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.84 on 3998 degrees of freedom
+    ## Multiple R-squared:  0.2249, Adjusted R-squared:  0.2236 
+    ## F-statistic: 165.8 on 7 and 3998 DF,  p-value: < 2.2e-16
+
+Backward
+
+``` r
+step(mult.fit, direction = 'backward', trace = FALSE)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ tumor_size + race_as_factor_bc_data_var_1 + 
+    ##     t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + 
+    ##     n_stage_as_factor_bc_data_var_2 + x6th_stage_as_factor_bc_data_var_3 + 
+    ##     a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + 
+    ##     status_as_factor_bc_data_var_0, data = bc_data_dummy)
+    ## 
+    ## Coefficients:
+    ##                             (Intercept)  
+    ##                                81.21453  
+    ##                              tumor_size  
+    ##                                -0.05631  
+    ##            race_as_factor_bc_data_var_1  
+    ##                                -1.77403  
+    ##         t_stage_as_factor_bc_data_var_1  
+    ##                                -3.46466  
+    ##         t_stage_as_factor_bc_data_var_2  
+    ##                                -3.42648  
+    ##         n_stage_as_factor_bc_data_var_2  
+    ##                                 2.23931  
+    ##      x6th_stage_as_factor_bc_data_var_3  
+    ##                                -2.35503  
+    ##         a_stage_as_factor_bc_data_var_1  
+    ##                                -4.80914  
+    ## estrogen_status_as_factor_bc_data_var_0  
+    ##                                -4.12002  
+    ##          status_as_factor_bc_data_var_0  
+    ##                               -28.71037
+
+``` r
+backward_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1, 
+                  data = bc_data_dummy)
+
+summary(backward_pred)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ t_stage_as_factor_bc_data_var_1 + 
+    ##     t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + 
+    ##     a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + 
+    ##     status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + 
+    ##     tumor_size + race_as_factor_bc_data_var_1, data = bc_data_dummy)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -72.187 -15.310   0.046  16.081  55.844 
+    ## 
+    ## Coefficients:
+    ##                                          Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                              81.21453    2.27563  35.689  < 2e-16
+    ## t_stage_as_factor_bc_data_var_1          -3.46466    1.95535  -1.772  0.07649
+    ## t_stage_as_factor_bc_data_var_2          -3.42648    1.54699  -2.215  0.02682
+    ## n_stage_as_factor_bc_data_var_2           2.23931    1.47528   1.518  0.12912
+    ## a_stage_as_factor_bc_data_var_1          -4.80914    2.21200  -2.174  0.02975
+    ## estrogen_status_as_factor_bc_data_var_0  -4.12002    1.27907  -3.221  0.00129
+    ## status_as_factor_bc_data_var_0          -28.71037    0.90959 -31.564  < 2e-16
+    ## x6th_stage_as_factor_bc_data_var_3       -2.35503    1.47769  -1.594  0.11108
+    ## tumor_size                               -0.05631    0.02948  -1.910  0.05620
+    ## race_as_factor_bc_data_var_1             -1.77403    1.21690  -1.458  0.14496
+    ##                                            
+    ## (Intercept)                             ***
+    ## t_stage_as_factor_bc_data_var_1         .  
+    ## t_stage_as_factor_bc_data_var_2         *  
+    ## n_stage_as_factor_bc_data_var_2            
+    ## a_stage_as_factor_bc_data_var_1         *  
+    ## estrogen_status_as_factor_bc_data_var_0 ** 
+    ## status_as_factor_bc_data_var_0          ***
+    ## x6th_stage_as_factor_bc_data_var_3         
+    ## tumor_size                              .  
+    ## race_as_factor_bc_data_var_1               
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.84 on 3996 degrees of freedom
+    ## Multiple R-squared:  0.2249, Adjusted R-squared:  0.2232 
+    ## F-statistic: 128.9 on 9 and 3996 DF,  p-value: < 2.2e-16
+
+Both Directions
+
+``` r
+step(mult.fit, direction = 'both', trace = FALSE)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ tumor_size + race_as_factor_bc_data_var_1 + 
+    ##     t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + 
+    ##     n_stage_as_factor_bc_data_var_2 + x6th_stage_as_factor_bc_data_var_3 + 
+    ##     a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + 
+    ##     status_as_factor_bc_data_var_0 + differentiate_as_factor_bc_data_var_4, 
+    ##     data = bc_data_dummy)
+    ## 
+    ## Coefficients:
+    ##                             (Intercept)  
+    ##                                81.48828  
+    ##                              tumor_size  
+    ##                                -0.05714  
+    ##            race_as_factor_bc_data_var_1  
+    ##                                -1.79838  
+    ##         t_stage_as_factor_bc_data_var_1  
+    ##                                -3.43219  
+    ##         t_stage_as_factor_bc_data_var_2  
+    ##                                -3.45923  
+    ##         n_stage_as_factor_bc_data_var_2  
+    ##                                 2.19394  
+    ##      x6th_stage_as_factor_bc_data_var_3  
+    ##                                -2.37434  
+    ##         a_stage_as_factor_bc_data_var_1  
+    ##                                -4.80172  
+    ## estrogen_status_as_factor_bc_data_var_0  
+    ##                                -4.25832  
+    ##          status_as_factor_bc_data_var_0  
+    ##                               -28.80115  
+    ##   differentiate_as_factor_bc_data_var_4  
+    ##                                -1.53394
+
+``` r
+both_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_4, 
+                  data = bc_data_dummy)
+
+summary(both_pred)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ t_stage_as_factor_bc_data_var_1 + 
+    ##     t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + 
+    ##     a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + 
+    ##     status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + 
+    ##     tumor_size + race_as_factor_bc_data_var_1 + differentiate_as_factor_bc_data_var_4, 
+    ##     data = bc_data_dummy)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -70.951 -15.228   0.039  16.079  55.859 
+    ## 
+    ## Coefficients:
+    ##                                          Estimate Std. Error t value Pr(>|t|)
+    ## (Intercept)                              81.48828    2.28112  35.723  < 2e-16
+    ## t_stage_as_factor_bc_data_var_1          -3.43219    1.95502  -1.756 0.079238
+    ## t_stage_as_factor_bc_data_var_2          -3.45923    1.54678  -2.236 0.025380
+    ## n_stage_as_factor_bc_data_var_2           2.19394    1.47522   1.487 0.137042
+    ## a_stage_as_factor_bc_data_var_1          -4.80172    2.21152  -2.171 0.029972
+    ## estrogen_status_as_factor_bc_data_var_0  -4.25832    1.28151  -3.323 0.000899
+    ## status_as_factor_bc_data_var_0          -28.80115    0.91104 -31.614  < 2e-16
+    ## x6th_stage_as_factor_bc_data_var_3       -2.37434    1.47742  -1.607 0.108113
+    ## tumor_size                               -0.05714    0.02948  -1.939 0.052628
+    ## race_as_factor_bc_data_var_1             -1.79838    1.21672  -1.478 0.139472
+    ## differentiate_as_factor_bc_data_var_4    -1.53394    0.92575  -1.657 0.097602
+    ##                                            
+    ## (Intercept)                             ***
+    ## t_stage_as_factor_bc_data_var_1         .  
+    ## t_stage_as_factor_bc_data_var_2         *  
+    ## n_stage_as_factor_bc_data_var_2            
+    ## a_stage_as_factor_bc_data_var_1         *  
+    ## estrogen_status_as_factor_bc_data_var_0 ***
+    ## status_as_factor_bc_data_var_0          ***
+    ## x6th_stage_as_factor_bc_data_var_3         
+    ## tumor_size                              .  
+    ## race_as_factor_bc_data_var_1               
+    ## differentiate_as_factor_bc_data_var_4   .  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.84 on 3995 degrees of freedom
+    ## Multiple R-squared:  0.2255, Adjusted R-squared:  0.2235 
+    ## F-statistic: 116.3 on 10 and 3995 DF,  p-value: < 2.2e-16
 
 ### LASSO
 
 ``` r
-# fit a LASSO with lambda = 1
-# smaller lambda, tends to give large model (more predictors)
+# supply sequence of lambda values for the lasso cross validation for lambda
+lambda_seq <- 10^seq(-3, 0, by = .1)
+set.seed(2023)
 
+# save matrix of predictors to pass to the lasso function
 mat = makeX(bc_data[1:14])
+
+response_dat.state =
+  bc_data %>% 
+  select(survival_months) %>% 
+  as.matrix()
+
+cv_lasso_fit <- glmnet::cv.glmnet(x = mat,
+                                    y = response_dat.state,
+                                    lambda = lambda_seq,
+                                    nfolds = 10)
+cv_lasso_fit
 ```
 
-``` r
-fit_LASSO = cv.glmnet(mat, bc_data$survival_months, alpha = 1)
-plot(fit_LASSO)
-```
+    ## 
+    ## Call:  glmnet::cv.glmnet(x = mat, y = response_dat.state, lambda = lambda_seq,      nfolds = 10) 
+    ## 
+    ## Measure: Mean-Squared Error 
+    ## 
+    ##     Lambda Index Measure    SE Nonzero
+    ## min 0.2512     7   489.1 12.83      21
+    ## 1se 1.0000     1   491.9 13.30      10
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+min lambda is 0.25
 
 ``` r
-best_lambda = fit_LASSO$lambda.min
-best_model = glmnet(mat, bc_data$survival_months, alpha=1, lambda=best_lambda)
-coef(best_model)
+lasso_fit = glmnet::glmnet(x = mat,
+                           y = response_dat.state,
+                           lambda = cv_lasso_fit$lambda.min)
+coef(lasso_fit)
 ```
 
     ## 39 x 1 sparse Matrix of class "dgCMatrix"
     ##                                   s0
-    ## (Intercept)             7.387678e+01
-    ## age                    -1.078760e-02
-    ## race1                  -3.008502e+00
+    ## (Intercept)             7.316194e+01
+    ## age                    -3.987188e-03
+    ## race1                  -2.832633e+00
     ## race2                   .           
-    ## race3                   1.486667e+00
+    ## race3                   1.274236e+00
     ## marital_status1         .           
-    ## marital_status2         5.816162e-01
-    ## marital_status3        -3.696471e+00
+    ## marital_status2         5.383468e-01
+    ## marital_status3        -3.186934e+00
     ## marital_status4         .           
-    ## marital_status5        -1.655770e-01
-    ## t_stage1                4.841804e-01
-    ## t_stage2               -3.926243e-01
+    ## marital_status5         .           
+    ## t_stage1                8.210388e-01
+    ## t_stage2               -1.926698e-02
     ## t_stage3                .           
     ## t_stage4                .           
-    ## n_stage1                8.067125e-01
+    ## n_stage1                7.618059e-01
     ## n_stage2                .           
-    ## n_stage3               -2.369885e+00
-    ## x6th_stage1             2.016864e-01
+    ## n_stage3               -2.369430e+00
+    ## x6th_stage1             2.218546e-01
     ## x6th_stage2             .           
     ## x6th_stage3             .           
     ## x6th_stage4             .           
     ## x6th_stage5             .           
-    ## differentiate1          3.158119e-01
-    ## differentiate2         -6.322311e-01
-    ## differentiate3         -7.110511e-01
-    ## differentiate4          .           
-    ## grade1                  .           
-    ## grade2                  1.773918e-06
-    ## grade3                 -6.511434e-04
-    ## grade4                 -2.027346e-03
-    ## a_stage1               -3.664116e+00
-    ## a_stage2                1.624892e-12
-    ## tumor_size             -3.664301e-02
-    ## estrogen_status0       -8.565382e+00
-    ## estrogen_status1        .           
-    ## progesterone_status0   -1.347338e+00
-    ## progesterone_status1    1.606878e-12
-    ## regional_node_examined  6.436147e-02
-    ## regional_node_positive -2.890161e-01
-
-``` r
-best_lambda
-```
-
-    ## [1] 0.1864977
-
-``` r
-fit_LASSO_logit = cv.glmnet(mat, bc_data$status, family="binomial")
-plot(fit_LASSO_logit)
-```
-
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
-
-``` r
-coef(fit_LASSO_logit)
-```
-
-    ## 39 x 1 sparse Matrix of class "dgCMatrix"
-    ##                                   s1
-    ## (Intercept)             2.024847e+00
-    ## age                     .           
-    ## race1                   .           
-    ## race2                   .           
-    ## race3                   .           
-    ## marital_status1         .           
-    ## marital_status2         .           
-    ## marital_status3         .           
-    ## marital_status4         .           
-    ## marital_status5         .           
-    ## t_stage1                3.363993e-02
-    ## t_stage2                .           
-    ## t_stage3                .           
-    ## t_stage4               -1.299144e-01
-    ## n_stage1                2.623441e-01
-    ## n_stage2                .           
-    ## n_stage3               -2.128179e-01
-    ## x6th_stage1             .           
-    ## x6th_stage2             .           
-    ## x6th_stage3             .           
-    ## x6th_stage4             .           
-    ## x6th_stage5            -9.423639e-16
-    ## differentiate1          .           
-    ## differentiate2         -1.575132e-01
+    ## differentiate1          2.657832e-01
+    ## differentiate2         -5.742593e-01
     ## differentiate3          .           
     ## differentiate4          .           
     ## grade1                  .           
-    ## grade2                  .           
-    ## grade3                 -2.163465e-15
+    ## grade2                  7.163250e-04
+    ## grade3                  .           
     ## grade4                  .           
-    ## a_stage1                .           
-    ## a_stage2                .           
-    ## tumor_size             -9.458872e-04
-    ## estrogen_status0       -5.248956e-01
-    ## estrogen_status1        9.588132e-13
-    ## progesterone_status0   -3.647179e-01
-    ## progesterone_status1    2.603790e-13
-    ## regional_node_examined  .           
-    ## regional_node_positive -4.702258e-02
+    ## a_stage1               -3.292971e+00
+    ## a_stage2                3.206509e-14
+    ## tumor_size             -2.979397e-02
+    ## estrogen_status0       -8.437197e+00
+    ## estrogen_status1        .           
+    ## progesterone_status0   -1.282546e+00
+    ## progesterone_status1    1.056815e-12
+    ## regional_node_examined  5.166213e-02
+    ## regional_node_positive -2.784534e-01
+
+Fit LASSO:
+
+``` r
+pred_lasso = lm(survival_months ~ age+race_as_factor_bc_data_var_1+race_as_factor_bc_data_var_3+marital_status_as_factor_bc_data_var_2+marital_status_as_factor_bc_data_var_3+t_stage_as_factor_bc_data_var_1+t_stage_as_factor_bc_data_var_2+n_stage_as_factor_bc_data_var_1+n_stage_as_factor_bc_data_var_3+x6th_stage_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_2+grade_as_factor_bc_data_var_2+a_stage_as_factor_bc_data_var_1+a_stage_as_factor_bc_data_var_2+tumor_size+estrogen_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_1+status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1, data = bc_data_dummy)
+
+summary(pred_lasso)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ age + race_as_factor_bc_data_var_1 + 
+    ##     race_as_factor_bc_data_var_3 + marital_status_as_factor_bc_data_var_2 + 
+    ##     marital_status_as_factor_bc_data_var_3 + t_stage_as_factor_bc_data_var_1 + 
+    ##     t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_1 + 
+    ##     n_stage_as_factor_bc_data_var_3 + x6th_stage_as_factor_bc_data_var_1 + 
+    ##     differentiate_as_factor_bc_data_var_1 + differentiate_as_factor_bc_data_var_2 + 
+    ##     grade_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + 
+    ##     a_stage_as_factor_bc_data_var_2 + tumor_size + estrogen_status_as_factor_bc_data_var_0 + 
+    ##     progesterone_status_as_factor_bc_data_var_0 + progesterone_status_as_factor_bc_data_var_1 + 
+    ##     status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_1, 
+    ##     data = bc_data_dummy)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -70.310 -15.180   0.001  16.028  56.099 
+    ## 
+    ## Coefficients: (4 not defined because of singularities)
+    ##                                              Estimate Std. Error t value
+    ## (Intercept)                                  77.03999    3.20976  24.002
+    ## age                                           0.03837    0.03573   1.074
+    ## race_as_factor_bc_data_var_1                 -1.52905    1.23919  -1.234
+    ## race_as_factor_bc_data_var_3                  0.91179    1.17136   0.778
+    ## marital_status_as_factor_bc_data_var_2        0.19705    0.67953   0.290
+    ## marital_status_as_factor_bc_data_var_3       -1.79124    3.05579  -0.586
+    ## t_stage_as_factor_bc_data_var_1              -3.11382    2.20014  -1.415
+    ## t_stage_as_factor_bc_data_var_2              -2.56936    1.44013  -1.784
+    ## n_stage_as_factor_bc_data_var_1              -0.34539    0.95092  -0.363
+    ## n_stage_as_factor_bc_data_var_3              -0.64763    1.20343  -0.538
+    ## x6th_stage_as_factor_bc_data_var_1            0.76543    1.53075   0.500
+    ## differentiate_as_factor_bc_data_var_1         1.32389    0.93857   1.411
+    ## differentiate_as_factor_bc_data_var_2         1.58473    1.06786   1.484
+    ## grade_as_factor_bc_data_var_2                      NA         NA      NA
+    ## a_stage_as_factor_bc_data_var_1              -3.61002    2.22301  -1.624
+    ## a_stage_as_factor_bc_data_var_2                    NA         NA      NA
+    ## tumor_size                                   -0.05714    0.02969  -1.924
+    ## estrogen_status_as_factor_bc_data_var_0      -4.60077    1.49275  -3.082
+    ## progesterone_status_as_factor_bc_data_var_0   0.57978    0.97779   0.593
+    ## progesterone_status_as_factor_bc_data_var_1        NA         NA      NA
+    ## status_as_factor_bc_data_var_0              -28.65756    0.93661 -30.597
+    ## status_as_factor_bc_data_var_1                     NA         NA      NA
+    ##                                             Pr(>|t|)    
+    ## (Intercept)                                  < 2e-16 ***
+    ## age                                          0.28305    
+    ## race_as_factor_bc_data_var_1                 0.21731    
+    ## race_as_factor_bc_data_var_3                 0.43638    
+    ## marital_status_as_factor_bc_data_var_2       0.77185    
+    ## marital_status_as_factor_bc_data_var_3       0.55779    
+    ## t_stage_as_factor_bc_data_var_1              0.15706    
+    ## t_stage_as_factor_bc_data_var_2              0.07448 .  
+    ## n_stage_as_factor_bc_data_var_1              0.71646    
+    ## n_stage_as_factor_bc_data_var_3              0.59050    
+    ## x6th_stage_as_factor_bc_data_var_1           0.61708    
+    ## differentiate_as_factor_bc_data_var_1        0.15846    
+    ## differentiate_as_factor_bc_data_var_2        0.13788    
+    ## grade_as_factor_bc_data_var_2                     NA    
+    ## a_stage_as_factor_bc_data_var_1              0.10447    
+    ## a_stage_as_factor_bc_data_var_2                   NA    
+    ## tumor_size                                   0.05438 .  
+    ## estrogen_status_as_factor_bc_data_var_0      0.00207 ** 
+    ## progesterone_status_as_factor_bc_data_var_0  0.55325    
+    ## progesterone_status_as_factor_bc_data_var_1       NA    
+    ## status_as_factor_bc_data_var_0               < 2e-16 ***
+    ## status_as_factor_bc_data_var_1                    NA    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 19.86 on 3988 degrees of freedom
+    ## Multiple R-squared:  0.2255, Adjusted R-squared:  0.2222 
+    ## F-statistic: 68.29 on 17 and 3988 DF,  p-value: < 2.2e-16
 
 ## Model Validation & Performance Evaluation
 
@@ -874,7 +1422,7 @@ cat("Adjusted R-squared:", adjusted_r_squared, "\n")
 
 ``` r
 # Train LASSO model using the best lambda obtained from cross-validation
-lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = best_lambda)
+lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = 8)
 ```
 
 ``` r
@@ -884,7 +1432,11 @@ predicted_val <- predict(lasso_model, newx = as.matrix(test_x))
 # Calculate evaluation metrics (e.g., Mean Squared Error and R-squared)
 rmse <- sqrt(mean((predicted_val - test_y)^2))
 rsquared <- 1 - (sum((test_y - predicted_val)^2) / sum((test_y - mean(test_y))^2))
+
+rmse
 ```
+
+    ## [1] 21.6487
 
 ``` r
 # Calculate the residual sum of squares (RSS)
@@ -905,7 +1457,7 @@ adjusted_r_squared_lasso <- 1 - ((1 - r_squared) * (n - 1) / (n - num_predictors
 adjusted_r_squared_lasso
 ```
 
-    ## [1] -2.172154
+    ## [1] -0.0431408
 
 ## The model we selected…
 
@@ -1046,9 +1598,72 @@ roc_curve <- roc(bc_data$status, predicted)
 plot(roc_curve)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+This is a very good classification!
 
 Use train-test split on logistic regression model to validate the model:
+
+``` r
+# train test split used for training and testing
+# Set seed for reproducibility
+set.seed(123)
+
+# Split data into training and testing sets (80% train, 20% test)
+train_indices <- sample(seq_len(nrow(bc_data)), 0.8 * nrow(bc_data))  # 80% train indices
+train_data <- bc_data[train_indices, ]  # Training data
+test_data <- bc_data[-train_indices, ]  # Testing data
+
+# Separate predictor variables (train_x, test_x) and target variable (train_y, test_y)
+train_x <- train_data[, -which(names(train_data) == "status")]
+train_y <- train_data$status
+
+test_x <- test_data[, -which(names(test_data) == "status")]
+test_y <- test_data$status
+```
+
+``` r
+# Fit logistic regression model using train data
+logistic_validate <- glm(status ~ ., data = train_data, family = "binomial")
+
+# Predict on test data
+test_predictions <- predict(logistic_validate, newdata = test_data, type = "response")
+```
+
+``` r
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(as.factor(round(test_predictions)), as.factor(test_data$status))
+
+# Print the confusion matrix
+print(conf_matrix)
+```
+
+    ## Confusion Matrix and Statistics
+    ## 
+    ##           Reference
+    ## Prediction   0   1
+    ##          0  38  14
+    ##          1  69 681
+    ##                                           
+    ##                Accuracy : 0.8965          
+    ##                  95% CI : (0.8733, 0.9167)
+    ##     No Information Rate : 0.8666          
+    ##     P-Value [Acc > NIR] : 0.006019        
+    ##                                           
+    ##                   Kappa : 0.4281          
+    ##                                           
+    ##  Mcnemar's Test P-Value : 3.08e-09        
+    ##                                           
+    ##             Sensitivity : 0.35514         
+    ##             Specificity : 0.97986         
+    ##          Pos Pred Value : 0.73077         
+    ##          Neg Pred Value : 0.90800         
+    ##              Prevalence : 0.13342         
+    ##          Detection Rate : 0.04738         
+    ##    Detection Prevalence : 0.06484         
+    ##       Balanced Accuracy : 0.66750         
+    ##                                           
+    ##        'Positive' Class : 0               
+    ## 
 
 ## Additional: Compare performance for White vs Black groups
 

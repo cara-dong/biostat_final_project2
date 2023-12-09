@@ -165,8 +165,38 @@ boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 
 ## Model and MLR selections
 ### MLR with all predictors
+
+Create dummies:
 ```{r}
-mult.fit = lm(survival_months ~ ., data = bc_data)
+# Create a copy of the original data (optional step)
+bc_data_dummy <- bc_data
+
+# Specify the names of factor variables
+factor_vars <- c("race", "marital_status", "t_stage", "n_stage", "x6th_stage", 
+                 "differentiate", "grade", "a_stage", "estrogen_status", 
+                 "progesterone_status", "status")
+
+# Loop through each factor variable and create dummy variables
+for (var in factor_vars) {
+  # Convert the factor variable into dummy variables
+  dummy_cols <- model.matrix(~ 0 + as.factor(bc_data[[var]]))
+  
+  # Modify column names to remove unwanted parts
+  colnames(dummy_cols) <- gsub(paste0(var, "_bc_data\\[\\[", var, "\\]\\]"), "", colnames(dummy_cols))
+  
+  # Assign dummy variables to the dataframe
+  colnames(dummy_cols) <- paste(var, colnames(dummy_cols), sep = "_")
+  bc_data_dummy <- cbind(bc_data_dummy, dummy_cols)
+}
+
+# Remove original factor columns if desired
+bc_data_dummy <- bc_data_dummy[, !names(bc_data_dummy) %in% factor_vars] |> janitor::clean_names()
+
+head(bc_data_dummy)
+```
+
+```{r}
+mult.fit = lm(survival_months ~ ., data = bc_data_dummy)
 
 #logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
 #summary(logit_fit)
@@ -239,7 +269,7 @@ Keep tumor_size, delete the other two.
 
 Fit the reduced model:
 ```{r}
-reduced_df = bc_data |> select(-t_stage, -n_stage, -x6th_stage)
+reduced_df = bc_data_dummy |> select(-t_stage_as_factor_bc_data_var_1, -t_stage_as_factor_bc_data_var_2, -t_stage_as_factor_bc_data_var_3, -t_stage_as_factor_bc_data_var_4, -n_stage_as_factor_bc_data_var_1, -n_stage_as_factor_bc_data_var_2, -n_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_1, -x6th_stage_as_factor_bc_data_var_2, -x6th_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_4, -x6th_stage_as_factor_bc_data_var_5)
 ```
 
 ```{r}
@@ -257,48 +287,83 @@ plot(reduced_model)
 
 Normality fit looks better at the left tail.
 
-### Stepwise, Backward
+### Stepwise
+Forward
 ```{r}
-# backward regression 
-#step_backward = step(mult.fit, direction='backward')
+intercept_only = lm(survival_months ~ 1, data = bc_data_dummy)
+step(intercept_only, direction = "forward", scope = formula(mult.fit), trace = FALSE)
+#step_forward = MASS::stepAIC(mult.fit, direction = "forward", trace = FALSE) |>
+  #broom::tidy()
 
-# Criteria based procedures. both direction: choose the model with the smallest AIC value
-step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
-  broom::tidy()
-
-knitr::kable(step_both, digits = 3)
+#knitr::kable(step_forward, digits = 3)
 ```
+
+```{r}
+forward_pred = lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 +  race_as_factor_bc_data_var_1, 
+                  data = bc_data_dummy)
+
+summary(forward_pred)
+```
+
+Backward
+```{r}
+step(mult.fit, direction = 'backward', trace = FALSE)
+```
+
+```{r}
+backward_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1, 
+                  data = bc_data_dummy)
+
+summary(backward_pred)
+```
+
+Both Directions
+```{r}
+step(mult.fit, direction = 'both', trace = FALSE)
+```
+
+```{r}
+both_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_4, 
+                  data = bc_data_dummy)
+
+summary(both_pred)
+```
+
 
 ### LASSO
 ```{r}
-# fit a LASSO with lambda = 1
-# smaller lambda, tends to give large model (more predictors)
+# supply sequence of lambda values for the lasso cross validation for lambda
+lambda_seq <- 10^seq(-3, 0, by = .1)
+set.seed(2023)
 
+# save matrix of predictors to pass to the lasso function
 mat = makeX(bc_data[1:14])
+
+response_dat.state =
+  bc_data %>% 
+  select(survival_months) %>% 
+  as.matrix()
+
+cv_lasso_fit <- glmnet::cv.glmnet(x = mat,
+                                    y = response_dat.state,
+                                    lambda = lambda_seq,
+                                    nfolds = 10)
+cv_lasso_fit
 ```
+min lambda is 0.25
 
 ```{r}
-fit_LASSO = cv.glmnet(mat, bc_data$survival_months, alpha = 1)
-plot(fit_LASSO)
+lasso_fit = glmnet::glmnet(x = mat,
+                           y = response_dat.state,
+                           lambda = cv_lasso_fit$lambda.min)
+coef(lasso_fit)
 ```
 
+Fit LASSO:
 ```{r}
-best_lambda = fit_LASSO$lambda.min
-best_model = glmnet(mat, bc_data$survival_months, alpha=1, lambda=best_lambda)
-coef(best_model)
-```
+pred_lasso = lm(survival_months ~ age+race_as_factor_bc_data_var_1+race_as_factor_bc_data_var_3+marital_status_as_factor_bc_data_var_2+marital_status_as_factor_bc_data_var_3+t_stage_as_factor_bc_data_var_1+t_stage_as_factor_bc_data_var_2+n_stage_as_factor_bc_data_var_1+n_stage_as_factor_bc_data_var_3+x6th_stage_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_2+grade_as_factor_bc_data_var_2+a_stage_as_factor_bc_data_var_1+a_stage_as_factor_bc_data_var_2+tumor_size+estrogen_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_1+status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1, data = bc_data_dummy)
 
-```{r}
-best_lambda
-```
-
-```{r}
-fit_LASSO_logit = cv.glmnet(mat, bc_data$status, family="binomial")
-plot(fit_LASSO_logit)
-```
-
-```{r}
-coef(fit_LASSO_logit)
+summary(pred_lasso)
 ```
 
 
@@ -453,7 +518,7 @@ cat("Adjusted R-squared:", adjusted_r_squared, "\n")
 ### Test LASSO
 ```{r}
 # Train LASSO model using the best lambda obtained from cross-validation
-lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = best_lambda)
+lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = 8)
 ```
 
 ```{r}
@@ -463,6 +528,8 @@ predicted_val <- predict(lasso_model, newx = as.matrix(test_x))
 # Calculate evaluation metrics (e.g., Mean Squared Error and R-squared)
 rmse <- sqrt(mean((predicted_val - test_y)^2))
 rsquared <- 1 - (sum((test_y - predicted_val)^2) / sum((test_y - mean(test_y))^2))
+
+rmse
 ```
 
 ```{r}
@@ -514,15 +581,48 @@ conf_matrix <- confusionMatrix(as.factor(round(predicted)), as.factor(bc_data$st
 
 # Print the confusion matrix
 print(conf_matrix)
+```
 
+```{r}
 # ROC curve and AUC
 roc_curve <- roc(bc_data$status, predicted)
 plot(roc_curve)
 ```
+This is a very good classification!
 
 Use train-test split on logistic regression model to validate the model:
 ```{r}
+# train test split used for training and testing
+# Set seed for reproducibility
+set.seed(123)
 
+# Split data into training and testing sets (80% train, 20% test)
+train_indices <- sample(seq_len(nrow(bc_data)), 0.8 * nrow(bc_data))  # 80% train indices
+train_data <- bc_data[train_indices, ]  # Training data
+test_data <- bc_data[-train_indices, ]  # Testing data
+
+# Separate predictor variables (train_x, test_x) and target variable (train_y, test_y)
+train_x <- train_data[, -which(names(train_data) == "status")]
+train_y <- train_data$status
+
+test_x <- test_data[, -which(names(test_data) == "status")]
+test_y <- test_data$status
+```
+
+```{r}
+# Fit logistic regression model using train data
+logistic_validate <- glm(status ~ ., data = train_data, family = "binomial")
+
+# Predict on test data
+test_predictions <- predict(logistic_validate, newdata = test_data, type = "response")
+```
+
+```{r}
+# Create the confusion matrix
+conf_matrix <- confusionMatrix(as.factor(round(test_predictions)), as.factor(test_data$status))
+
+# Print the confusion matrix
+print(conf_matrix)
 ```
 
 
