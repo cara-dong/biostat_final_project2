@@ -1217,9 +1217,33 @@ summary(pred_lasso)
     ## Multiple R-squared:  0.2255, Adjusted R-squared:  0.2222 
     ## F-statistic: 68.29 on 17 and 3988 DF,  p-value: < 2.2e-16
 
-## Model Validation & Performance Evaluation
+## The model we selected…
 
-First, we will conduct a train-test split on bc_data:
+Choosing btw forward selection and stepwise selection based on adjusted
+R^2
+
+Diagnostics for the two candidates:
+
+``` r
+par(mfrow = c(2,2))
+plot(forward_pred)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+
+``` r
+par(mfrow = c(2,2))
+plot(both_pred)
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+
+Still choose forward selection one, because less predictors used is
+better based on principle of parsimony.
+
+## Chosen Model’s Validation & Performance Evaluation
+
+First, we will conduct a train-test split on bc_data_dummy:
 
 ``` r
 # train test split used for training and testing
@@ -1227,9 +1251,9 @@ First, we will conduct a train-test split on bc_data:
 set.seed(123)
 
 # Split data into training and testing sets (80% train, 20% test)
-train_indices <- sample(seq_len(nrow(bc_data)), 0.8 * nrow(bc_data))  # 80% train indices
-train_data <- bc_data[train_indices, ]  # Training data
-test_data <- bc_data[-train_indices, ]  # Testing data
+train_indices <- sample(seq_len(nrow(bc_data_dummy)), 0.8 * nrow(bc_data_dummy))  # 80% train indices
+train_data <- bc_data_dummy[train_indices, ]  # Training data
+test_data <- bc_data_dummy[-train_indices, ]  # Testing data
 
 # Separate predictor variables (train_x, test_x) and target variable (train_y, test_y)
 train_x <- train_data[, -which(names(train_data) == "survival_months")]
@@ -1239,7 +1263,7 @@ test_x <- test_data[, -which(names(test_data) == "survival_months")]
 test_y <- test_data$survival_months
 ```
 
-### Test MLR w/ all predictors
+### Test the Forward selection model
 
 ``` r
 # Fit the MLR model on the training data
@@ -1286,184 +1310,6 @@ print(cv_results)
     ## 1      TRUE 19.94613 0.2154283 16.5184 0.3696032 0.01164553 0.1953258
 
 The RMSE and R-squared appear similar.
-
-### Test MLR with reduced multicollinearity
-
-``` r
-# Fit the MLR model on the training data
-reduced_train = train_data |> select(-t_stage, n_stage, x6th_stage)
-reduced_test = test_data |> select(-t_stage, n_stage, x6th_stage)
-  
-reduced_fit <- lm(survival_months ~ ., data = reduced_train)
-
-# Predict on the test data
-predicted_test <- predict(reduced_fit, newdata = reduced_test)
-
-# Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
-rmse <- sqrt(mean((predicted_test - reduced_test$survival_months)^2))
-rsquared <- summary(reduced_fit)$r.squared
-
-rsquared
-```
-
-    ## [1] 0.232238
-
-``` r
-mlr_summary_reduced <- summary(reduced_model)
-adjusted_r_squared_mlr_reduced <- mlr_summary_reduced$adj.r.squared
-adjusted_r_squared_mlr_reduced
-```
-
-    ## [1] 0.2216511
-
-We will also cross-validate MLR to double-check:
-
-``` r
-# Define the number of folds for cross-validation
-num_folds <- 5  # You can adjust the number of folds as needed
-
-# Define the control parameters for cross-validation
-ctrl <- trainControl(method = "cv", number = num_folds)
-
-# Train the MLR model with k-fold cross-validation
-reduced_fit_cv <- train(survival_months ~ ., data = reduced_df, method = "lm", trControl = ctrl)
-
-# Get cross-validated performance metrics
-cv_results_reduced <- reduced_fit_cv$results
-print(cv_results_reduced)
-```
-
-    ##   intercept    RMSE  Rsquared      MAE    RMSESD RsquaredSD     MAESD
-    ## 1      TRUE 19.9594 0.2159712 16.52566 0.3346709 0.03943883 0.2933473
-
-The RMSE and R-squared appear similar to that before cross-validation.
-
-### Test Stepwise Regression Model
-
-``` r
-# Create a named vector of coefficients
-coefficients <- c(
-  `(Intercept)` = 39.290750,
-  a_stage = 3.426435, 
-  estrogen_status = 3.744369, 
-  status = 29.713666
-)
-
-# Extract the predictor names from the coefficients
-selected_predictors <- names(coefficients)[-1]  # Exclude '(Intercept)'
-
-# Construct the formula for the model
-selected_formula <- reformulate(selected_predictors, response = "survival_months")
-
-# Fit the MLR model using the selected predictors and coefficients
-selected_model <- lm(selected_formula, data = train_data)  # Replace 'your_data' with your dataset
-
-# View the summary of the model
-summary(selected_model)
-```
-
-    ## 
-    ## Call:
-    ## lm(formula = selected_formula, data = train_data)
-    ## 
-    ## Residuals:
-    ##     Min      1Q  Median      3Q     Max 
-    ## -71.515 -15.515   0.485  16.485  56.413 
-    ## 
-    ## Coefficients:
-    ##                  Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)        38.727      2.623  14.767  < 2e-16 ***
-    ## a_stage2            3.861      2.373   1.627 0.103927    
-    ## estrogen_status1    4.790      1.416   3.383 0.000726 ***
-    ## status1            29.137      1.004  29.025  < 2e-16 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## Residual standard error: 20.05 on 3200 degrees of freedom
-    ## Multiple R-squared:  0.2294, Adjusted R-squared:  0.2286 
-    ## F-statistic: 317.5 on 3 and 3200 DF,  p-value: < 2.2e-16
-
-``` r
-# Predict on the test data
-predicted_test <- predict(selected_model, newdata = test_data)
-
-# Calculate evaluation metrics: RMSE, R-squared, and adjusted R-squared
-actual_values <- test_data$survival_months  # Actual values from test data
-
-# RMSE
-rmse <- sqrt(mean((predicted_test - test_y)^2))
-
-# R-squared
-rsquared <- summary(selected_model)$r.squared
-
-# Adjusted R-squared
-num_predictors <- length(coef(selected_model)) - 1  # Number of predictors (excluding intercept)
-n <- length(test_y)  # Total number of samples
-adjusted_r_squared <- 1 - ((1 - rsquared) * (n - 1) / (n - num_predictors - 1))
-
-cat("RMSE:", rmse, "\n")
-```
-
-    ## RMSE: 19.06999
-
-``` r
-cat("R-squared:", rsquared, "\n")
-```
-
-    ## R-squared: 0.2293712
-
-``` r
-cat("Adjusted R-squared:", adjusted_r_squared, "\n")
-```
-
-    ## Adjusted R-squared: 0.2264741
-
-### Test LASSO
-
-``` r
-# Train LASSO model using the best lambda obtained from cross-validation
-lasso_model <- glmnet(train_x, train_y, alpha = 1, lambda = 8)
-```
-
-``` r
-# Predict using the validation data
-predicted_val <- predict(lasso_model, newx = as.matrix(test_x))
-
-# Calculate evaluation metrics (e.g., Mean Squared Error and R-squared)
-rmse <- sqrt(mean((predicted_val - test_y)^2))
-rsquared <- 1 - (sum((test_y - predicted_val)^2) / sum((test_y - mean(test_y))^2))
-
-rmse
-```
-
-    ## [1] 21.6487
-
-``` r
-# Calculate the residual sum of squares (RSS)
-rss <- sum((predicted_val - test_y)^2)
-
-# Get the number of predictors used in the LASSO model
-num_predictors <- sum(coef(lasso_model) != 0) - 1  # Exclude intercept (-1)
-
-# Get the total number of samples
-n <- length(test_y)
-
-# Calculate adjusted R-squared for LASSO model
-r_squared <- 1 - (rss / ((n - num_predictors - 1) * var(test_y)))
-adjusted_r_squared_lasso <- 1 - ((1 - r_squared) * (n - 1) / (n - num_predictors - 1))
-```
-
-``` r
-adjusted_r_squared_lasso
-```
-
-    ## [1] -0.0431408
-
-## The model we selected…
-
-xxxx The reasons behind: The crude, all-in-one MLR performs better than
-linear regression with LASSO regularization in terms of adjusted
-R-squared. all-predictor one compared with the reduced-predictor one?
 
 ## Additional: Logistic Regression
 
@@ -1598,7 +1444,7 @@ roc_curve <- roc(bc_data$status, predicted)
 plot(roc_curve)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-44-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 This is a very good classification!
 
 Use train-test split on logistic regression model to validate the model:
@@ -1665,7 +1511,25 @@ print(conf_matrix)
     ##        'Positive' Class : 0               
     ## 
 
-## Additional: Compare performance for White vs Black groups
+## Additional/Optional: Compare performance for White vs Black groups
 
 And can you improve the prediction performance gap btw these two groups
 for your model?
+
+Use the forward model for white group only, then use the forward model
+for other group only
+
+Compare performance
+
+How to improve? - weighting the race variable?
+
+``` r
+# Assign different weights based on the racial group
+#bc_data$weight <- ifelse(bc_data$race == "White", 1, 2)  # Assign higher weight to "Black" or other minorities
+
+# Define your linear regression model using lm()
+#model <- lm(target_var ~ ., data = bc_data, weights = bc_data$weight)
+
+# Fit the model
+#fit <- summary(model)
+```
