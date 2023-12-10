@@ -199,20 +199,12 @@ bc_data_dummy <- bc_data_dummy[, !names(bc_data_dummy) %in% factor_vars] |> jani
 head(bc_data_dummy)
 ```
 
-Exclude status in bc_data_dummy for MLR continuous fit:
-```{r}
-bc_data_dummy_new = bc_data_dummy |> select(-status_as_factor_bc_data_var_0, status_as_factor_bc_data_var_1)
-```
-
-
 ```{r}
 mult.fit = lm(survival_months ~ . - differentiate - status, data = bc_data)
 
-#logit_fit=glm(status ~ .-survival_months,family="binomial",data=bc_data)
-#summary(logit_fit)
-
 summary(mult.fit)
 ```
+
 ```{r}
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
@@ -237,6 +229,18 @@ view_influential
 ```
 
 After investigation, it looks like these three points are not negatively impacting the results. So, we will not remove them. They have a reason to be there.
+
+```{r}
+# Predict on the test data
+predicted_test <- predict(mult.fit, newdata = bc_data)
+
+# Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
+rmse <- sqrt(mean((predicted_test - bc_data$survival_months)^2))
+rsquared <- summary(mult.fit)$r.squared
+
+rmse
+rsquared
+```
 
 
 ### MLR reducing multicollinearity using correlation matrix
@@ -281,19 +285,20 @@ Keep tumor_size, delete the other two.
 
 Fit the reduced model:
 ```{r}
-reduced_df = bc_data_dummy |> select(-t_stage_as_factor_bc_data_var_1, -t_stage_as_factor_bc_data_var_2, -t_stage_as_factor_bc_data_var_3, -t_stage_as_factor_bc_data_var_4, -n_stage_as_factor_bc_data_var_1, -n_stage_as_factor_bc_data_var_2, -n_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_1, -x6th_stage_as_factor_bc_data_var_2, -x6th_stage_as_factor_bc_data_var_3, -x6th_stage_as_factor_bc_data_var_4, -x6th_stage_as_factor_bc_data_var_5)
+reduced_df = bc_data |> select(-t_stage, -n_stage, -regional_node_positive)
 ```
 
 ```{r}
-reduced_model = lm(survival_months ~ ., data = reduced_df) 
+reduced_model = lm(survival_months ~ . -status-differentiate, data = reduced_df) 
 
-summary(reduced_model) 
+summary(reduced_model)
 # |> broom::tidy() |> knitr::kable(digits=3)
 ```
 
 Estrogen_status1 seems to be the most influential factor .
 
 ```{r}
+par(mfrow = c(2,2))
 plot(reduced_model)
 ```
 
@@ -304,15 +309,12 @@ Forward
 ```{r}
 intercept_only = lm(survival_months ~ 1, data = bc_data)
 step(intercept_only, direction = "forward", scope = formula(mult.fit), trace = FALSE)
-#step_forward = MASS::stepAIC(mult.fit, direction = "forward", trace = FALSE) |>
-  #broom::tidy()
-
-#knitr::kable(step_forward, digits = 3)
 ```
 
 ```{r}
-forward_pred = lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 +  race_as_factor_bc_data_var_1, 
-                  data = bc_data_dummy)
+forward_pred = lm(survival_months ~ x6th_stage + estrogen_status + 
+    race + a_stage + regional_node_positive + regional_node_examined + 
+    tumor_size + progesterone_status, data = bc_data)
 
 summary(forward_pred)
 ```
@@ -323,8 +325,9 @@ step(mult.fit, direction = 'backward', trace = FALSE)
 ```
 
 ```{r}
-backward_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1, 
-                  data = bc_data_dummy)
+backward_pred = lm(formula = survival_months ~ race + a_stage + tumor_size + 
+    estrogen_status + progesterone_status + regional_node_examined + 
+    regional_node_positive, data = bc_data)
 
 summary(backward_pred)
 ```
@@ -335,11 +338,52 @@ step(mult.fit, direction = 'both', trace = FALSE)
 ```
 
 ```{r}
-both_pred = lm(survival_months ~ t_stage_as_factor_bc_data_var_1 + t_stage_as_factor_bc_data_var_2 + n_stage_as_factor_bc_data_var_2 + a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_0 + status_as_factor_bc_data_var_0 + x6th_stage_as_factor_bc_data_var_3 + tumor_size + race_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_4, 
-                  data = bc_data_dummy)
+both_pred = lm(formula = survival_months ~ race + a_stage + tumor_size + 
+    estrogen_status + progesterone_status + regional_node_examined + 
+    regional_node_positive, data = bc_data)
 
 summary(both_pred)
 ```
+
+```{r}
+step_forward = MASS::stepAIC(mult.fit, direction = "forward", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_forward, digits = 3)
+```
+
+```{r}
+step_back = MASS::stepAIC(mult.fit, direction = "backward", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_back, digits = 3)
+```
+
+```{r}
+back_aic_pred = lm(survival_months ~ race + a_stage + tumor_size + 
+    estrogen_status + progesterone_status + regional_node_examined + 
+    regional_node_positive, data = bc_data)
+
+summary(back_aic_pred)
+```
+
+
+Stepwise AIC
+```{r}
+step_both = MASS::stepAIC(mult.fit, direction = "both", trace = FALSE) |>
+  broom::tidy()
+
+knitr::kable(step_both, digits = 3)
+```
+
+```{r}
+both_aic_pred = lm(survival_months ~ race + a_stage + tumor_size + 
+    estrogen_status + progesterone_status + regional_node_examined + 
+    regional_node_positive, data = bc_data)
+
+summary(both_aic_pred)
+```
+
 
 ### LASSO
 ```{r}
@@ -372,9 +416,7 @@ coef(lasso_fit)
 
 Fit LASSO:
 ```{r}
-pred_lasso = lm(survival_months ~ age+race_as_factor_bc_data_var_1+race_as_factor_bc_data_var_3+marital_status_as_factor_bc_data_var_2+marital_status_as_factor_bc_data_var_3+t_stage_as_factor_bc_data_var_1+t_stage_as_factor_bc_data_var_2+n_stage_as_factor_bc_data_var_1+n_stage_as_factor_bc_data_var_3+x6th_stage_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_1+differentiate_as_factor_bc_data_var_2+grade_as_factor_bc_data_var_2+a_stage_as_factor_bc_data_var_1+a_stage_as_factor_bc_data_var_2+tumor_size+estrogen_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_0+progesterone_status_as_factor_bc_data_var_1+status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1, data = bc_data_dummy)
-
-# +status_as_factor_bc_data_var_0+status_as_factor_bc_data_var_1
+pred_lasso = lm(survival_months ~ age + race + marital_status + t_stage + n_stage + x6th_stage + grade + a_stage + tumor_size + estrogen_status + progesterone_status + regional_node_examined + regional_node_positive, data = bc_data)
 
 summary(pred_lasso)
 ```
@@ -398,16 +440,16 @@ Still choose forward selection one, because less predictors used is better based
 
 ## Chosen Model's Validation & Performance Evaluation
 
-First, we will conduct a train-test split on bc_data_dummy:
+First, we will conduct a train-test split on bc_data:
 ```{r}
 # train test split used for training and testing
 # Set seed for reproducibility
 set.seed(123)
 
 # Split data into training and testing sets (80% train, 20% test)
-train_indices <- sample(seq_len(nrow(bc_data_dummy)), 0.8 * nrow(bc_data_dummy))  # 80% train indices
-train_data <- bc_data_dummy[train_indices, ]  # Training data
-test_data <- bc_data_dummy[-train_indices, ]  # Testing data
+train_indices <- sample(seq_len(nrow(bc_data)), 0.8 * nrow(bc_data))  # 80% train indices
+train_data <- bc_data[train_indices, ]  # Training data
+test_data <- bc_data[-train_indices, ]  # Testing data
 
 # Separate predictor variables (train_x, test_x) and target variable (train_y, test_y)
 train_x <- train_data[, -which(names(train_data) == "survival_months")]
@@ -420,20 +462,21 @@ test_y <- test_data$survival_months
 ### Test the Forward selection model
 ```{r}
 # Fit the MLR model on the training data
-mult.fit <- lm(survival_months ~ ., data = train_data)
+forward_validate <- lm(survival_months ~ x6th_stage + estrogen_status + race + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = train_data)
 
 # Predict on the test data
-predicted_test <- predict(mult.fit, newdata = test_data)
+predicted_test <- predict(forward_validate, newdata = test_data)
 
 # Calculate evaluation metrics (e.g., Mean Squared Error, R-squared)
 rmse <- sqrt(mean((predicted_test - test_data$survival_months)^2))
-rsquared <- summary(mult.fit)$r.squared
+rsquared <- summary(forward_validate)$r.squared
 
+rmse
 rsquared
 ```
 
 ```{r}
-mlr_summary <- summary(mult.fit)
+mlr_summary <- summary(forward_validate)
 adjusted_r_squared_mlr <- mlr_summary$adj.r.squared
 adjusted_r_squared_mlr
 ```
@@ -447,10 +490,10 @@ num_folds <- 5  # You can adjust the number of folds as needed
 ctrl <- trainControl(method = "cv", number = num_folds)
 
 # Train the MLR model with k-fold cross-validation
-mult.fit_cv <- train(survival_months ~ ., data = bc_data, method = "lm", trControl = ctrl)
+forward_validate_cv <- train(survival_months ~ x6th_stage + estrogen_status + race + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = bc_data, method = "lm", trControl = ctrl)
 
 # Get cross-validated performance metrics
-cv_results <- mult.fit_cv$results
+cv_results <- forward_validate_cv$results
 print(cv_results)
 ```
 The RMSE and R-squared appear similar.
@@ -472,7 +515,7 @@ head(predicted)
 ```
 
 Evaluate model performance on training set:
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(caret)
 library(pROC)
 
@@ -542,16 +585,14 @@ And can you improve the prediction performance gap btw these two groups for your
 
 Use the forward model for white group only, then use the forward model for other group only
 ```{r}
-white = bc_data_dummy |> filter(race_as_factor_bc_data_var_2==1)
-minor = bc_data_dummy |> filter(race_as_factor_bc_data_var_2==0)
+white = bc_data |> filter(race==2)
+minor = bc_data |> filter(race!=2)
 ```
 
 ```{r}
-forward_white = lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 +  race_as_factor_bc_data_var_1, 
-                  data = white)
+forward_white = lm(survival_months ~ x6th_stage + estrogen_status + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = white)
 
-forward_minor = lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 +  race_as_factor_bc_data_var_1, 
-                  data = minor)
+forward_minor = lm(survival_months ~ x6th_stage + estrogen_status + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = minor)
 ```
 
 ```{r}
@@ -559,7 +600,7 @@ summary(forward_white)
 summary(forward_minor)
 ```
 
-Compare performance: Based on adjusted R-squared, the forward selection model predicts better for white patients than for black and other patients.
+Compare performance: Based on adjusted R-squared, the forward selection model predicts better for white patients than for black and other minority patients.
 
 How to improve? - weighting the race variable?
 ```{r}
@@ -570,20 +611,22 @@ n_minor <- nrow(minor)
 # Calculate weights based on the number of observations in each group
 weight_white <- n_minor / n_white
 weight_minor <- n_white / n_minor
-
-# Calculate the geometric mean of the weights
-geometric_mean_weight <- sqrt(weight_white * weight_minor)
-
-# Fit weighted linear regression models with balanced weights
-weighted_forward_white_balanced <- lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 + race_as_factor_bc_data_var_1,
-                                      data = white, weights = rep(geometric_mean_weight, n_white))
-
-weighted_forward_minor_balanced <- lm(survival_months ~ a_stage_as_factor_bc_data_var_1 + estrogen_status_as_factor_bc_data_var_1 + status_as_factor_bc_data_var_1 + x6th_stage_as_factor_bc_data_var_4 + tumor_size + differentiate_as_factor_bc_data_var_4 + race_as_factor_bc_data_var_1,
-                                      data = minor, weights = rep(geometric_mean_weight, n_minor))
 ```
 
 ```{r}
-summary(weighted_forward_white_balanced)
-summary(weighted_forward_minor_balanced)
+# Fit weighted linear regression models
+weighted_forward_white <- lm(survival_months ~ x6th_stage + estrogen_status + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = white, weights = rep(weight_white, n_white))
+
+weighted_forward_minor <- lm(survival_months ~ x6th_stage + estrogen_status + a_stage + regional_node_positive + regional_node_examined + tumor_size + progesterone_status, data = minor, weights = rep(weight_minor, n_minor))
+```
+
+```{r}
+summary(weighted_forward_white)
+summary(weighted_forward_minor)
+```
+
+Not working, so we will try to create 2 separate models for the white and minor dataset.
+```{r}
+
 ```
 
