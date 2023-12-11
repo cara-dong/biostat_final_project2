@@ -104,6 +104,28 @@ hist(sq_survival, main = "Distribution of square(survival months)", xlab = "squa
 iv_survival = (1/bc_data$survival_months)
 hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
 ```
+### Numerical Variables distribution 
+```{r}
+par(mfrow = c(2,4))
+for(col in conti_var) {
+  hist(bc_data[[col]], main = paste("histogram of", col))
+}
+```
+
+
+```{r}
+bc_data_vartran = bc_data |>
+  mutate(log_reginol_node_positive =log(reginol_node_positive), 
+         log_regional_node_examined= log(regional_node_examined), 
+         log_tumor_size = log(tumor_size)) |>
+  select(- reginol_node_positive, -tumor_size, -regional_node_examined)
+
+log_var = c("age", "log_tumor_size", "log_regional_node_examined","log_reginol_node_positive", "survival_months")
+par(mfrow = c(2,4))
+for(col in log_var) {
+  hist(bc_data_vartran[[col]], main = paste("histogram of", col))
+}
+```
 
 ### Convert categorical data to factor
 ```{r}
@@ -204,6 +226,14 @@ mult.fit = lm(survival_months ~ . - differentiate - status, data = bc_data)
 
 summary(mult.fit)
 ```
+
+```{r}
+# if use log(variables)
+log_mult.fit = lm(survival_months ~ . - differentiate - status, data = bc_data_vartran)
+
+summary(log_mult.fit)
+```
+DO WE NEED TO DO LOG?
 
 ```{r}
 # residual vs. leverage plot

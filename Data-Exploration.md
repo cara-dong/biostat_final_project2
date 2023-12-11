@@ -162,6 +162,32 @@ hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inv
 ```
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
+\### Numerical Variables distribution
+
+``` r
+par(mfrow = c(2,4))
+for(col in conti_var) {
+  hist(bc_data[[col]], main = paste("histogram of", col))
+}
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+bc_data_vartran = bc_data |>
+  mutate(log_reginol_node_positive =log(reginol_node_positive), 
+         log_regional_node_examined= log(regional_node_examined), 
+         log_tumor_size = log(tumor_size)) |>
+  select(- reginol_node_positive, -tumor_size, -regional_node_examined)
+
+log_var = c("age", "log_tumor_size", "log_regional_node_examined","log_reginol_node_positive", "survival_months")
+par(mfrow = c(2,4))
+for(col in log_var) {
+  hist(bc_data_vartran[[col]], main = paste("histogram of", col))
+}
+```
+
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ### Convert categorical data to factor
 
@@ -193,7 +219,7 @@ bc_data |>
   pairs()
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
 cor_matrix <- 
@@ -270,7 +296,7 @@ print(cor_matrix, digits = 3)
 corrplot(cor_matrix, type = "upper", diag = FALSE, tl.cex = 0.5, tl.srt = 45)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-8-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-10-2.png)<!-- -->
 
 ``` r
 # boxplots for each variable
@@ -284,7 +310,7 @@ boxplot(bc_data$t_stage, main = "t_stage")
 boxplot(bc_data$n_stage, main = "n_stage")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(2,4))
@@ -298,7 +324,7 @@ boxplot(bc_data$regional_node_examined, main = "regional_node_examined")
 boxplot(bc_data$regional_node_positive, main = "regional_node_positive")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-9-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-11-2.png)<!-- -->
 
 ## Model and MLR selections
 
@@ -532,18 +558,70 @@ summary(mult.fit)
     ## F-statistic: 7.965 on 24 and 3981 DF,  p-value: < 2.2e-16
 
 ``` r
+# if use log(variables)
+log_mult.fit = lm(survival_months ~ . - differentiate - status, data = bc_data_vartran)
+
+summary(log_mult.fit)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ . - differentiate - status, data = bc_data_vartran)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -71.735 -15.701   1.204  17.900  55.121 
+    ## 
+    ## Coefficients: (1 not defined because of singularities)
+    ##                             Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)                 56.32832    7.12085   7.910 3.30e-15 ***
+    ## age                         -0.03178    0.04074  -0.780  0.43537    
+    ## raceOther                    5.69254    1.82185   3.125  0.00179 ** 
+    ## raceWhite                    3.59100    1.38047   2.601  0.00932 ** 
+    ## marital_statusMarried        0.58345    1.09873   0.531  0.59543    
+    ## marital_statusSeparated     -5.20459    3.49347  -1.490  0.13635    
+    ## marital_statusSingle        -0.13834    1.35688  -0.102  0.91880    
+    ## marital_statusWidowed       -0.71313    1.78210  -0.400  0.68906    
+    ## t_stageT2                   -0.93097    1.75529  -0.530  0.59588    
+    ## t_stageT3                   -0.39627    2.47690  -0.160  0.87290    
+    ## t_stageT4                   -3.14625    4.34168  -0.725  0.46870    
+    ## n_stageN2                    0.36169    2.07774   0.174  0.86181    
+    ## n_stageN3                   -3.05073    2.52469  -1.208  0.22698    
+    ## x6th_stageIIB                0.05940    1.79796   0.033  0.97365    
+    ## x6th_stageIIIA              -0.22151    2.31927  -0.096  0.92392    
+    ## x6th_stageIIIB               3.84884    5.06448   0.760  0.44732    
+    ## x6th_stageIIIC                    NA         NA      NA       NA    
+    ## grade1                       2.55065    5.19693   0.491  0.62360    
+    ## grade2                       3.11461    5.12355   0.608  0.54329    
+    ## grade3                       1.86374    5.13494   0.363  0.71666    
+    ## a_stageRegional              4.81934    2.62516   1.836  0.06646 .  
+    ## estrogen_statusPositive      9.04900    1.65694   5.461 5.02e-08 ***
+    ## progesterone_statusPositive  1.53808    1.08420   1.419  0.15608    
+    ## log_reginol_node_positive   -2.01810    0.79422  -2.541  0.01109 *  
+    ## log_regional_node_examined   1.09466    0.51109   2.142  0.03227 *  
+    ## log_tumor_size              -1.20934    1.01740  -1.189  0.23465    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 22.06 on 3981 degrees of freedom
+    ## Multiple R-squared:  0.04568,    Adjusted R-squared:  0.03992 
+    ## F-statistic: 7.939 on 24 and 3981 DF,  p-value: < 2.2e-16
+
+DO WE NEED TO DO LOG?
+
+``` r
 # residual vs. leverage plot
 plot(mult.fit, which = 4)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(2,2))
 plot(mult.fit)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-12-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
 
 Looks like doesn’t need a transformation on the outcome survival months.
 
@@ -720,7 +798,7 @@ par(mfrow = c(2,2))
 plot(reduced_model)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 Normality fit looks better at the left tail.
 
@@ -1199,14 +1277,14 @@ par(mfrow = c(2,2))
 plot(forward_pred)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-40-1.png)<!-- -->
 
 ``` r
 par(mfrow = c(2,2))
 plot(both_pred)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 Still choose forward selection one, because less predictors used is
 better based on principle of parsimony.
@@ -1410,7 +1488,7 @@ roc_curve <- roc(bc_data$status, predicted)
 plot(roc_curve, legacy.axes = TRUE, print.auc = TRUE, col = "pink", main = "ROC Curve for All Data")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-45-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-48-1.png)<!-- -->
 
 This is a very good classification!
 
@@ -1493,7 +1571,7 @@ roc_curve_test <- roc(test_data$status, test_predictions)
 plot(roc_curve_test, legacy.axes = TRUE, print.auc = TRUE, col = "darkgreen", main = "ROC Curve for Test Data")
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-49-1.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-52-1.png)<!-- -->
 
 ## Additional/Optional: Compare performance for White vs Black groups
 
