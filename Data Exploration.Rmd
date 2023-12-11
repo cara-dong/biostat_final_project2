@@ -627,7 +627,21 @@ summary(weighted_forward_minor)
 
 Not working, so we will try to create 2 separate models for the white and minor dataset.
 ```{r}
-simplified_model <- lm(survival_months ~ race + marital_status, data = minor)
-summary(simplified_model)
+intercept_only = lm(survival_months ~ 1, data = white)
+step(intercept_only, direction = "forward", scope = formula(forward_white), trace = FALSE)
+
+white_specific = lm(formula = survival_months ~ x6th_stage + estrogen_status + 
+    regional_node_examined + regional_node_positive + progesterone_status + 
+    tumor_size, data = white)
+
+summary(white_specific)
+
+intercept_only = lm(survival_months ~ 1, data = minor)
+step(intercept_only, direction = "forward", scope = formula(forward_minor), trace = FALSE)
+
+minor_specific = lm(formula = survival_months ~ a_stage + regional_node_positive + 
+    estrogen_status, data = minor)
+
+summary(minor_specific)
 ```
 

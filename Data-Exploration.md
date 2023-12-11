@@ -1679,29 +1679,104 @@ Not working, so we will try to create 2 separate models for the white
 and minor dataset.
 
 ``` r
-simplified_model <- lm(survival_months ~ race + marital_status, data = minor)
-summary(simplified_model)
+intercept_only = lm(survival_months ~ 1, data = white)
+step(intercept_only, direction = "forward", scope = formula(forward_white), trace = FALSE)
 ```
 
     ## 
     ## Call:
-    ## lm(formula = survival_months ~ race + marital_status, data = minor)
+    ## lm(formula = survival_months ~ x6th_stage + estrogen_status + 
+    ##     regional_node_examined + regional_node_positive + progesterone_status + 
+    ##     tumor_size, data = white)
+    ## 
+    ## Coefficients:
+    ##            (Intercept)             x6th_stage2             x6th_stage3  
+    ##               62.97149                -1.41015                -1.58307  
+    ##            x6th_stage4             x6th_stage5        estrogen_status1  
+    ##               -1.68357                -5.15285                 9.85948  
+    ## regional_node_examined  regional_node_positive    progesterone_status1  
+    ##                0.13113                -0.34364                 1.99057  
+    ##             tumor_size  
+    ##               -0.03664
+
+``` r
+white_specific = lm(formula = survival_months ~ x6th_stage + estrogen_status + 
+    regional_node_examined + regional_node_positive + progesterone_status + 
+    tumor_size, data = white)
+
+summary(white_specific)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ x6th_stage + estrogen_status + 
+    ##     regional_node_examined + regional_node_positive + progesterone_status + 
+    ##     tumor_size, data = white)
     ## 
     ## Residuals:
     ##     Min      1Q  Median      3Q     Max 
-    ## -68.735 -14.621   1.617  18.265  43.494 
+    ## -70.444 -15.621   0.931  17.953  54.459 
     ## 
     ## Coefficients:
-    ##                 Estimate Std. Error t value Pr(>|t|)    
-    ## (Intercept)       73.069      2.906  25.145  < 2e-16 ***
-    ## race3              4.353      2.017   2.158  0.03135 *  
-    ## marital_status2   -2.687      3.086  -0.871  0.38431    
-    ## marital_status3  -18.853      7.224  -2.610  0.00928 ** 
-    ## marital_status4  -10.563      3.435  -3.075  0.00220 ** 
-    ## marital_status5   -8.046      4.486  -1.793  0.07340 .  
+    ##                        Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)            62.97149    1.80484  34.890  < 2e-16 ***
+    ## x6th_stage2            -1.41015    1.03717  -1.360  0.17404    
+    ## x6th_stage3            -1.58307    1.31147  -1.207  0.22748    
+    ## x6th_stage4            -1.68357    3.14810  -0.535  0.59283    
+    ## x6th_stage5            -5.15285    2.49578  -2.065  0.03903 *  
+    ## estrogen_status1        9.85948    1.81030   5.446 5.51e-08 ***
+    ## regional_node_examined  0.13113    0.05054   2.595  0.00951 ** 
+    ## regional_node_positive -0.34364    0.14409  -2.385  0.01714 *  
+    ## progesterone_status1    1.99057    1.16090   1.715  0.08650 .  
+    ## tumor_size             -0.03664    0.02241  -1.635  0.10206    
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## 
-    ## Residual standard error: 23.09 on 601 degrees of freedom
-    ## Multiple R-squared:  0.04846,    Adjusted R-squared:  0.04055 
-    ## F-statistic: 6.122 on 5 and 601 DF,  p-value: 1.523e-05
+    ## Residual standard error: 21.89 on 3389 degrees of freedom
+    ## Multiple R-squared:  0.04065,    Adjusted R-squared:  0.0381 
+    ## F-statistic: 15.96 on 9 and 3389 DF,  p-value: < 2.2e-16
+
+``` r
+intercept_only = lm(survival_months ~ 1, data = minor)
+step(intercept_only, direction = "forward", scope = formula(forward_minor), trace = FALSE)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ a_stage + regional_node_positive + 
+    ##     estrogen_status, data = minor)
+    ## 
+    ## Coefficients:
+    ##            (Intercept)                a_stage2  regional_node_positive  
+    ##                48.5783                 17.4065                 -0.5455  
+    ##       estrogen_status1  
+    ##                 8.0878
+
+``` r
+minor_specific = lm(formula = survival_months ~ a_stage + regional_node_positive + 
+    estrogen_status, data = minor)
+
+summary(minor_specific)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ a_stage + regional_node_positive + 
+    ##     estrogen_status, data = minor)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -67.527 -15.663   1.473  18.473  45.470 
+    ## 
+    ## Coefficients:
+    ##                        Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)             48.5783     6.7018   7.249  1.3e-12 ***
+    ## a_stage2                17.4065     6.1521   2.829  0.00482 ** 
+    ## regional_node_positive  -0.5455     0.1930  -2.826  0.00487 ** 
+    ## estrogen_status1         8.0878     3.1576   2.561  0.01067 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 23.09 on 603 degrees of freedom
+    ## Multiple R-squared:  0.04512,    Adjusted R-squared:  0.04037 
+    ## F-statistic: 9.498 on 3 and 603 DF,  p-value: 3.877e-06
