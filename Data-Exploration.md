@@ -1677,3 +1677,31 @@ summary(weighted_forward_minor)
 
 Not working, so we will try to create 2 separate models for the white
 and minor dataset.
+
+``` r
+simplified_model <- lm(survival_months ~ race + marital_status, data = minor)
+summary(simplified_model)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = survival_months ~ race + marital_status, data = minor)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -68.735 -14.621   1.617  18.265  43.494 
+    ## 
+    ## Coefficients:
+    ##                 Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)       73.069      2.906  25.145  < 2e-16 ***
+    ## race3              4.353      2.017   2.158  0.03135 *  
+    ## marital_status2   -2.687      3.086  -0.871  0.38431    
+    ## marital_status3  -18.853      7.224  -2.610  0.00928 ** 
+    ## marital_status4  -10.563      3.435  -3.075  0.00220 ** 
+    ## marital_status5   -8.046      4.486  -1.793  0.07340 .  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 23.09 on 601 degrees of freedom
+    ## Multiple R-squared:  0.04846,    Adjusted R-squared:  0.04055 
+    ## F-statistic: 6.122 on 5 and 601 DF,  p-value: 1.523e-05

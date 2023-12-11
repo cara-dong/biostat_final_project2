@@ -627,6 +627,7 @@ summary(weighted_forward_minor)
 
 Not working, so we will try to create 2 separate models for the white and minor dataset.
 ```{r}
-
+simplified_model <- lm(survival_months ~ race + marital_status, data = minor)
+summary(simplified_model)
 ```
 
