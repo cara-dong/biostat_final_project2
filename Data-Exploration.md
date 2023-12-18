@@ -607,21 +607,14 @@ summary(log_mult.fit)
     ## Multiple R-squared:  0.04568,    Adjusted R-squared:  0.03992 
     ## F-statistic: 7.939 on 24 and 3981 DF,  p-value: < 2.2e-16
 
-DO WE NEED TO DO LOG?
-
 ``` r
 # residual vs. leverage plot
-plot(mult.fit, which = 4)
-```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
-
-``` r
 par(mfrow = c(2,2))
 plot(mult.fit)
 ```
 
-![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-2.png)<!-- -->
+![](Data-Exploration_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 Looks like doesn’t need a transformation on the outcome survival months.
 

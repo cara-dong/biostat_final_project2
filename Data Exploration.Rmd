@@ -233,11 +233,10 @@ log_mult.fit = lm(survival_months ~ . - differentiate - status, data = bc_data_v
 
 summary(log_mult.fit)
 ```
-DO WE NEED TO DO LOG?
+
 
 ```{r}
 # residual vs. leverage plot
-plot(mult.fit, which = 4)
 
 par(mfrow = c(2,2))
 plot(mult.fit)
