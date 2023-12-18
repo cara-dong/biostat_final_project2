@@ -162,7 +162,8 @@ hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inv
 ```
 
 ![](Data-Exploration_files/figure-gfm/unnamed-chunk-6-5.png)<!-- -->
-\### Numerical Variables distribution
+
+### Numerical Variables distribution
 
 ``` r
 par(mfrow = c(2,4))
@@ -622,7 +623,8 @@ Use box-cox transformation to double-check if we need to make
 transformations.
 
 ``` r
-# boxcox(mult.fit)
+# boxcox_plot = boxcox(mult.fit) 
+# plot(boxcox_plot, main = "Box-Cox Transformation Plot")
 ```
 
 Since lambda approaches 1 and its 95% CI lies close to 1, it suggests

@@ -12,6 +12,7 @@ library(corrplot)
 library(leaps)
 library(glmnet)
 library(caret)
+# library(MASS)
 
 
 options(
@@ -104,6 +105,7 @@ hist(sq_survival, main = "Distribution of square(survival months)", xlab = "squa
 iv_survival = (1/bc_data$survival_months)
 hist(iv_survival, main = "Distribution of inverse(survival months)", xlab = "inverse(survival months)", xlim = c(0,0.1),breaks=100)
 ```
+
 ### Numerical Variables distribution 
 ```{r}
 par(mfrow = c(2,4))
@@ -246,7 +248,9 @@ Looks like doesn't need a transformation on the outcome survival months.
 
 Use box-cox transformation to double-check if we need to make transformations.
 ```{r message=FALSE, warning=FALSE}
-# boxcox(mult.fit)
+# boxcox_plot = boxcox(mult.fit) 
+# plot(boxcox_plot, main = "Box-Cox Transformation Plot")
+  
 ```
 
 Since lambda approaches 1 and its 95% CI lies close to 1, it suggests that we do not need to make any transformation.
