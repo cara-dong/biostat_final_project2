@@ -343,16 +343,21 @@ summary(both_pred)
 ```
 
 ### Criterion-Based AIC
-```{r}
-step_forward = MASS::stepAIC(mult.fit, direction = "forward", trace = FALSE) |>
-  broom::tidy()
-
-knitr::kable(step_forward, digits = 3)
+```{r message=FALSE, warning=FALSE}
+b = regsubsets(survival_months ~ . - status - differentiate, data = bc_data)
+rs = summary(b)
+rs
 ```
 
+
 ```{r}
-head(bc_data)
+par(mfrow=c(1,2))
+plot(1:9, rs$cp, xlab = "No of parameters", ylab = "Cp Statistic")
+abline(0,1)
+plot(1:9, rs$adjr2, xlab = "No of parameters", ylab = "Adj R2")
 ```
+
+It looks like 10 parameters (9 predictors) would give the best model.
 
 ### LASSO
 ```{r}
